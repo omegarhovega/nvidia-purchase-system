@@ -1,193 +1,134 @@
 use std::error::Error;
 use std::time::Duration;
-use config::{Config, File};
-use serde::Deserialize;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use rand::Rng;
+use chrono::Local;
+use log::{info, error, LevelFilter};
+use simplelog::{CombinedLogger, Config, TermLogger, WriteLogger, TerminalMode, ColorChoice};
+use std::fs::File;
+use reqwest;
+use config::Config as AppConfig;
+use tokio;
 
-// Import the product_checker module
 mod product_checker;
-use product_checker::check_product_availability;
+use product_checker::{check_nvidia_api, ApiConfig, HeadersConfig, DefaultLinksConfig, RequestConfig};
 
-/// Configuration struct to deserialize from the config file
-#[derive(Debug, Deserialize)]
-struct AppConfig {
-    url: String,
-    request: RequestConfig,
-    headers: HeadersConfig,
-    default_links: DefaultLinksConfig,
-}
-
-#[derive(Debug, Deserialize)]
-struct RequestConfig {
-    timeout_secs: u64,
-    connect_timeout_secs: u64,
-    max_attempts: u32,
-}
-
-#[derive(Debug, Deserialize)]
-struct HeadersConfig {
-    user_agent: String,
-    accept: String,
-    accept_language: String,
-    connection: String,
-    cache_control: String,
-    pragma: String,
-    sec_fetch_dest: String,
-    sec_fetch_mode: String,
-    sec_fetch_site: String,
-    origin: String,
-    referer: String,
-    sec_ch_ua: String,
-    sec_ch_ua_mobile: String,
-    sec_ch_ua_platform: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct DefaultLinksConfig {
-    rtx_5080: String,
-    rtx_5090: String,
-}
-
-/// Loads configuration from config files
-fn load_config() -> Result<AppConfig, config::ConfigError> {
-    let config = Config::builder()
-        .add_source(File::with_name("config/default"))
-        .build()?;
-    
-    config.try_deserialize()
-}
-
-/// Makes a request to NVIDIA API and logs the response with retry capability
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Set up logging
+    let log_file = File::create("nvidia_product_checker.log")?;
+    CombinedLogger::init(vec![
+        TermLogger::new(LevelFilter::Info, Config::default(), TerminalMode::Mixed, ColorChoice::Auto),
+        WriteLogger::new(LevelFilter::Info, Config::default(), log_file),
+    ])?;
+    
     // Load configuration
-    let config = load_config()?;
-    println!("Configuration loaded successfully");
-    
-    println!("Attempting to access NVIDIA API...");
-    
-    // Create a client with better browser emulation
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(config.request.timeout_secs))
-        .connect_timeout(Duration::from_secs(config.request.connect_timeout_secs))
-        .danger_accept_invalid_certs(true)  // Try accepting invalid certs
-        .user_agent(&config.headers.user_agent)
+    let settings = AppConfig::builder()
+        .add_source(config::File::with_name("config/default"))
         .build()?;
     
-    // Maximum number of attempts
-    let max_attempts = config.request.max_attempts;
-    let mut last_error = None;
+    // Extract configuration values
+    let api_url = settings.get_string("url")?;
+    let timeout_secs = settings.get_int("request.timeout_secs")? as u64;
+    let connect_timeout_secs = settings.get_int("request.connect_timeout_secs")? as u64;
+    let max_attempts = settings.get_int("request.max_attempts")? as u32;
     
-    // Try the request with retries
-    for attempt in 1..=max_attempts {
-        println!("\nAttempt {}/{}", attempt, max_attempts);
+    // Extract default links
+    let default_link_5080 = settings.get_string("default_links.rtx_5080")?;
+    let default_link_5090 = settings.get_string("default_links.rtx_5090")?;
+    
+    // Extract headers
+    let user_agent = settings.get_string("headers.user_agent")?;
+    let accept = settings.get_string("headers.accept")?;
+    let accept_language = settings.get_string("headers.accept_language")?;
+    let connection = settings.get_string("headers.connection")?;
+    let cache_control = settings.get_string("headers.cache_control")?;
+    let pragma = settings.get_string("headers.pragma")?;
+    let sec_fetch_dest = settings.get_string("headers.sec_fetch_dest")?;
+    let sec_fetch_mode = settings.get_string("headers.sec_fetch_mode")?;
+    let sec_fetch_site = settings.get_string("headers.sec_fetch_site")?;
+    let origin = settings.get_string("headers.origin")?;
+    let referer = settings.get_string("headers.referer")?;
+    let sec_ch_ua = settings.get_string("headers.sec_ch_ua")?;
+    let sec_ch_ua_mobile = settings.get_string("headers.sec_ch_ua_mobile")?;
+    let sec_ch_ua_platform = settings.get_string("headers.sec_ch_ua_platform")?;
+    
+    // Create API configuration
+    let api_config = ApiConfig {
+        url: api_url,
+        headers: HeadersConfig {
+            user_agent,
+            accept,
+            accept_language,
+            connection,
+            cache_control,
+            pragma,
+            sec_fetch_dest,
+            sec_fetch_mode,
+            sec_fetch_site,
+            origin,
+            referer,
+            sec_ch_ua,
+            sec_ch_ua_mobile,
+            sec_ch_ua_platform,
+        },
+        default_links: DefaultLinksConfig {
+            rtx_5080: default_link_5080,
+            rtx_5090: default_link_5090,
+        },
+        request: RequestConfig {
+            timeout_secs,
+            connect_timeout_secs,
+            max_attempts,
+        },
+    };
+    
+    // Create HTTP client with timeout
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(timeout_secs))
+        .connect_timeout(Duration::from_secs(connect_timeout_secs))
+        .user_agent(&api_config.headers.user_agent)
+        .build()?;
+    
+    println!("[{}] Configuration loaded successfully", Local::now().format("%Y-%m-%d %H:%M:%S"));
+    info!("Configuration loaded successfully");
+    
+    // Set up Ctrl+C handler
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
+    
+    ctrlc::set_handler(move || {
+        println!("\n[{}] Received Ctrl+C, shutting down...", Local::now().format("%Y-%m-%d %H:%M:%S"));
+        info!("Received Ctrl+C, shutting down...");
+        r.store(false, Ordering::SeqCst);
+    })?;
+    
+    println!("[{}] Starting continuous product availability check (Press Ctrl+C to exit)", 
+             Local::now().format("%Y-%m-%d %H:%M:%S"));
+    info!("Starting continuous product availability check");
+    
+    // Main loop
+    let mut cycle: u64 = 0;
+    let mut rng = rand::thread_rng();
+    
+    while running.load(Ordering::SeqCst) {
+        cycle += 1;
         
-        // Calculate backoff time (exponential backoff)
-        if attempt > 1 {
-            let backoff_secs = 2_u64.pow((attempt - 1) as u32);
-            println!("Waiting {} seconds before retry...", backoff_secs);
-            tokio::time::sleep(Duration::from_secs(backoff_secs)).await;
+        // Check NVIDIA API
+        if let Err(e) = check_nvidia_api(&api_config, &client, cycle).await {
+            error!("Cycle #{} - Failed to check NVIDIA API: {}", cycle, e);
         }
         
-        // Build request with detailed headers that look more like a real browser
-        println!("Sending request with common browser headers...");
-        let request = client.get(&config.url)
-            .header("Accept", &config.headers.accept)
-            .header("Accept-Language", &config.headers.accept_language)
-            // Don't specify Accept-Encoding to let reqwest handle it
-            .header("Connection", &config.headers.connection)
-            .header("Cache-Control", &config.headers.cache_control)
-            .header("Pragma", &config.headers.pragma)
-            .header("Sec-Fetch-Dest", &config.headers.sec_fetch_dest)
-            .header("Sec-Fetch-Mode", &config.headers.sec_fetch_mode)
-            .header("Sec-Fetch-Site", &config.headers.sec_fetch_site)
-            .header("Origin", &config.headers.origin)
-            .header("Referer", &config.headers.referer)
-            .header("sec-ch-ua", &config.headers.sec_ch_ua)
-            .header("sec-ch-ua-mobile", &config.headers.sec_ch_ua_mobile)
-            .header("sec-ch-ua-platform", &config.headers.sec_ch_ua_platform);
-        
-        // Send the request
-        let response_result = request.send().await;
-            
-        match response_result {
-            Ok(response) => {
-                // Log response info
-                println!("Response status: {}", response.status());
-                
-                // Check if successful
-                if response.status().is_success() {
-                    // Get response bytes instead of text for binary data
-                    match response.bytes().await {
-                        Ok(bytes) => {
-                            println!("Successfully received response with length: {} bytes", bytes.len());
-
-                            // Parse as JSON, printing the result if successful
-                            match serde_json::from_slice::<serde_json::Value>(&bytes) {
-                                Ok(json) => {
-                                    // Check for product availability
-                                    println!("\n=== PRODUCT AVAILABILITY CHECK ===");
-                                    
-                                    if let Some(searched_products) = json["searchedProducts"].as_object() {
-                                        if let Some(product_details) = searched_products.get("productDetails") {
-                                            if let Some(products) = product_details.as_array() {
-                                                if products.is_empty() {
-                                                    println!("No products found in the API response.");
-                                                } else {
-                                                    for product in products {
-                                                        let (name, available) = check_product_availability(
-                                                            product, 
-                                                            &config.default_links.rtx_5080,
-                                                            &config.default_links.rtx_5090
-                                                        );
-                                                        let status = if available { "AVAILABLE" } else { "NOT AVAILABLE" };
-                                                        println!("{}: {}", name, status);
-                                                    }
-                                                }
-                                            } else {
-                                                println!("productDetails is not an array");
-                                            }
-                                        } else {
-                                            println!("productDetails not found in the response");
-                                        }
-                                    } else {
-                                        println!("searchedProducts not found in the response");
-                                    }
-                                    
-                                    return Ok(());
-                                },
-                                Err(e) => {
-                                    println!("Couldn't parse response as JSON: {}", e);                                   
-                                }
-                            }
-                        },
-                        Err(e) => {
-                            println!("Error reading response body: {}", e);
-                            last_error = Some(format!("Error reading response body: {}", e));
-                        }
-                    }
-                } else {
-                    let status = response.status();
-                    match response.bytes().await {
-                        Ok(bytes) => {
-                            println!("Error response length: {} bytes", bytes.len());
-                            println!("First 100 bytes: {:?}", &bytes.iter().take(100).collect::<Vec<_>>());
-                        }
-                        Err(e) => println!("Could not read error response: {}", e)
-                    }
-                    
-                    last_error = Some(format!("HTTP error status: {}", status));
-                }
-            },
-            Err(e) => {
-                println!("Request failed: {}", e);
-                println!("Error details: {:?}", e);
-                last_error = Some(format!("Request error: {}", e));
-            }
+        // Random sleep between 0.5 and 1 second
+        if running.load(Ordering::SeqCst) {
+            let sleep_ms = rng.gen_range(500..1000);
+            tokio::time::sleep(Duration::from_millis(sleep_ms)).await;
         }
     }
     
-    // If we get here, all attempts failed
-    let error_msg = last_error.unwrap_or_else(|| "All requests failed with unknown errors".to_string());
-    println!("\nAll {} request attempts failed. Last error: {}", max_attempts, error_msg);
-    Err(error_msg.into())
+    println!("[{}] Application terminated gracefully", Local::now().format("%Y-%m-%d %H:%M:%S"));
+    info!("Application terminated gracefully");
+    
+    Ok(())
 }
