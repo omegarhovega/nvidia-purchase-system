@@ -55,10 +55,14 @@ pub struct DefaultLinksConfig {
     pub rtx_5090: String,
 }
 
+/// Accounts for request configuration timeout_ fields which are unused in this file 
+#[allow(dead_code)]
 pub struct RequestConfig {
     pub timeout_secs: u64,
     pub connect_timeout_secs: u64,
     pub max_attempts: u32,
+    pub sleep_ms_min: u64,
+    pub sleep_ms_max: u64,
 }
 
 /// Makes a request to NVIDIA API and checks product availability

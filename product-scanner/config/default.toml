@@ -8,6 +8,8 @@ url = "https://api.nvidia.partners/edge/product/search?page=1&limit=9&manufactur
 timeout_secs = 30
 connect_timeout_secs = 15
 max_attempts = 4
+sleep_ms_min = 500
+sleep_ms_max = 1000
 
 # Browser emulation headers
 [headers]

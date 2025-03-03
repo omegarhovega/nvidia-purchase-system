@@ -33,6 +33,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let timeout_secs = settings.get_int("request.timeout_secs")? as u64;
     let connect_timeout_secs = settings.get_int("request.connect_timeout_secs")? as u64;
     let max_attempts = settings.get_int("request.max_attempts")? as u32;
+    let sleep_ms_min = settings.get_int("request.sleep_ms_min")? as u64;
+    let sleep_ms_max = settings.get_int("request.sleep_ms_max")? as u64;
     
     // Extract default links
     let default_link_5080 = settings.get_string("default_links.rtx_5080")?;
@@ -81,6 +83,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
             timeout_secs,
             connect_timeout_secs,
             max_attempts,
+            sleep_ms_min,
+            sleep_ms_max,
         },
     };
     
@@ -120,9 +124,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
             error!("Cycle #{} - Failed to check NVIDIA API: {}", cycle, e);
         }
         
-        // Random sleep between 0.5 and 1 second
+        // Random sleep between configured min and max values
         if running.load(Ordering::SeqCst) {
-            let sleep_ms = rng.gen_range(500..1000);
+            let sleep_ms = rng.gen_range(api_config.request.sleep_ms_min..api_config.request.sleep_ms_max);
             tokio::time::sleep(Duration::from_millis(sleep_ms)).await;
         }
     }
