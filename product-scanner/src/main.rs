@@ -126,7 +126,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         println!("[{}] Running in TEST MODE", Local::now().format("%Y-%m-%d %H:%M:%S"));
         info!("Running in TEST MODE");
         
-        // Test with RTX 5080
+        // Test with RTX 5090
         if let Err(e) = simulate_available_product("GeForce RTX 5090", &purchase_config).await {
             error!("Failed to simulate product availability: {}", e);
             println!("[{}] Failed to simulate product availability: {}", 
