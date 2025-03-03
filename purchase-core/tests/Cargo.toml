@@ -1,0 +1,11 @@
+[package]
+name = "nvidia-store-check"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+attohttpc = { version = "0.26", features = ["json", "tls-native"] }
+
+[[bin]]
+name = "nvidia-store-check"
+path = "nvidia_store_check.rs" 
