@@ -1,24 +1,69 @@
 use std::error::Error;
 use std::time::Duration;
+use config::{Config, File};
+use serde::Deserialize;
+
+/// Configuration struct to deserialize from the config file
+#[derive(Debug, Deserialize)]
+struct AppConfig {
+    url: String,
+    request: RequestConfig,
+    headers: HeadersConfig,
+}
+
+#[derive(Debug, Deserialize)]
+struct RequestConfig {
+    timeout_secs: u64,
+    connect_timeout_secs: u64,
+    max_attempts: u32,
+}
+
+#[derive(Debug, Deserialize)]
+struct HeadersConfig {
+    user_agent: String,
+    accept: String,
+    accept_language: String,
+    connection: String,
+    cache_control: String,
+    pragma: String,
+    sec_fetch_dest: String,
+    sec_fetch_mode: String,
+    sec_fetch_site: String,
+    origin: String,
+    referer: String,
+    sec_ch_ua: String,
+    sec_ch_ua_mobile: String,
+    sec_ch_ua_platform: String,
+}
+
+/// Loads configuration from config files
+fn load_config() -> Result<AppConfig, config::ConfigError> {
+    let config = Config::builder()
+        .add_source(File::with_name("config/default"))
+        .build()?;
+    
+    config.try_deserialize()
+}
 
 /// Makes a request to NVIDIA API and logs the response with retry capability
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    // Define the API URL
-    let url = "https://api.nvidia.partners/edge/product/search?page=1&limit=9&manufacturer_filter=NVIDIA%7E1&category=GPU&locale=de-de&manufacturer=NVIDIA";
+    // Load configuration
+    let config = load_config()?;
+    println!("Configuration loaded successfully");
     
     println!("Attempting to access NVIDIA API...");
     
     // Create a client with better browser emulation
     let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(30))  // Use a longer timeout
-        .connect_timeout(Duration::from_secs(15))
+        .timeout(Duration::from_secs(config.request.timeout_secs))
+        .connect_timeout(Duration::from_secs(config.request.connect_timeout_secs))
         .danger_accept_invalid_certs(true)  // Try accepting invalid certs
-        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36")
+        .user_agent(&config.headers.user_agent)
         .build()?;
     
     // Maximum number of attempts
-    let max_attempts = 4;
+    let max_attempts = config.request.max_attempts;
     let mut last_error = None;
     
     // Try the request with retries
@@ -34,21 +79,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
         
         // Build request with detailed headers that look more like a real browser
         println!("Sending request with common browser headers...");
-        let request = client.get(url)
-            .header("Accept", "application/json, text/plain, */*")
-            .header("Accept-Language", "en-US,en;q=0.9,de;q=0.8")
+        let request = client.get(&config.url)
+            .header("Accept", &config.headers.accept)
+            .header("Accept-Language", &config.headers.accept_language)
             // Don't specify Accept-Encoding to let reqwest handle it
-            .header("Connection", "keep-alive")
-            .header("Cache-Control", "no-cache")
-            .header("Pragma", "no-cache")
-            .header("Sec-Fetch-Dest", "empty")
-            .header("Sec-Fetch-Mode", "cors")
-            .header("Sec-Fetch-Site", "cross-site")
-            .header("Origin", "https://www.nvidia.com")
-            .header("Referer", "https://www.nvidia.com/")
-            .header("sec-ch-ua", "\"Google Chrome\";v=\"123\", \"Not:A-Brand\";v=\"8\"")
-            .header("sec-ch-ua-mobile", "?0")
-            .header("sec-ch-ua-platform", "\"Windows\"");
+            .header("Connection", &config.headers.connection)
+            .header("Cache-Control", &config.headers.cache_control)
+            .header("Pragma", &config.headers.pragma)
+            .header("Sec-Fetch-Dest", &config.headers.sec_fetch_dest)
+            .header("Sec-Fetch-Mode", &config.headers.sec_fetch_mode)
+            .header("Sec-Fetch-Site", &config.headers.sec_fetch_site)
+            .header("Origin", &config.headers.origin)
+            .header("Referer", &config.headers.referer)
+            .header("sec-ch-ua", &config.headers.sec_ch_ua)
+            .header("sec-ch-ua-mobile", &config.headers.sec_ch_ua_mobile)
+            .header("sec-ch-ua-platform", &config.headers.sec_ch_ua_platform);
         
         // Send the request
         let response_result = request.send().await;
