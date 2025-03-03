@@ -1,7 +1,5 @@
 use std::error::Error;
 use std::time::Duration;
-use std::fs::File;
-use std::io::Write;
 
 /// Makes a request to NVIDIA API and logs the response with retry capability
 #[tokio::main]
@@ -72,21 +70,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     match response.bytes().await {
                         Ok(bytes) => {
                             println!("Successfully received response with length: {} bytes", bytes.len());
-                            
-                            // Save the raw response to a file for examination
-                            let filename = format!("nvidia_response_attempt_{}.bin", attempt);
-                            match File::create(&filename) {
-                                Ok(mut file) => {
-                                    if let Err(e) = file.write_all(&bytes) {
-                                        println!("Failed to write response to file: {}", e);
-                                    } else {
-                                        println!("Raw response saved to {}", filename);
-                                    }
-                                },
-                                Err(e) => println!("Failed to create file: {}", e),
-                            }
-                            
-                            // Try to parse as JSON anyway, printing the result if successful
+
+                            // Parse as JSON, printing the result if successful
                             match serde_json::from_slice::<serde_json::Value>(&bytes) {
                                 Ok(json) => {
                                     let formatted_json = serde_json::to_string_pretty(&json)?;
@@ -94,28 +79,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                     return Ok(());
                                 },
                                 Err(e) => {
-                                    println!("Couldn't parse response as JSON: {}", e);
-                                    
-                                    // Try to convert to string and print first part
-                                    match std::str::from_utf8(&bytes) {
-                                        Ok(text) => {
-                                            println!("First 200 chars as UTF-8: {}", 
-                                                &text.chars().take(200).collect::<String>());
-                                        },
-                                        Err(_) => {
-                                            println!("Response is not valid UTF-8 text");
-                                            // Print first few bytes as hex
-                                            let max_bytes = std::cmp::min(bytes.len(), 50);
-                                            let hex_bytes: Vec<String> = bytes.iter()
-                                                .take(max_bytes)
-                                                .map(|b| format!("{:02X}", b))
-                                                .collect();
-                                            println!("First {} bytes (hex): {}", max_bytes, hex_bytes.join(" "));
-                                        }
-                                    }
-                                    
-                                    println!("Request succeeded but response format isn't standard JSON");
-                                    return Ok(());
+                                    println!("Couldn't parse response as JSON: {}", e);                                   
                                 }
                             }
                         },
