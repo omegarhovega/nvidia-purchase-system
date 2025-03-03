@@ -1,6 +1,6 @@
 # NVIDIA API Configuration
 
-# API URL
+# API URL including rtx 50 series availability information and direct purchase links
 url = "https://api.nvidia.partners/edge/product/search?page=1&limit=9&manufacturer_filter=NVIDIA%7E1&category=GPU&locale=de-de&manufacturer=NVIDIA"
 
 # Request settings
@@ -25,3 +25,8 @@ referer = "https://www.nvidia.com/"
 sec_ch_ua = "\"Google Chrome\";v=\"123\", \"Not:A-Brand\";v=\"8\""
 sec_ch_ua_mobile = "?0"
 sec_ch_ua_platform = "\"Windows\""
+
+# Default purchase links (when these change, the product_checker will mark the product as available)
+[default_links]
+rtx_5080 = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-geforce-rtx-5080/"
+rtx_5090 = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-geforce-rtx-5090/"

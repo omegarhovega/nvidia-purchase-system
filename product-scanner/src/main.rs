@@ -3,12 +3,17 @@ use std::time::Duration;
 use config::{Config, File};
 use serde::Deserialize;
 
+// Import the product_checker module
+mod product_checker;
+use product_checker::check_product_availability;
+
 /// Configuration struct to deserialize from the config file
 #[derive(Debug, Deserialize)]
 struct AppConfig {
     url: String,
     request: RequestConfig,
     headers: HeadersConfig,
+    default_links: DefaultLinksConfig,
 }
 
 #[derive(Debug, Deserialize)]
@@ -34,6 +39,12 @@ struct HeadersConfig {
     sec_ch_ua: String,
     sec_ch_ua_mobile: String,
     sec_ch_ua_platform: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct DefaultLinksConfig {
+    rtx_5080: String,
+    rtx_5090: String,
 }
 
 /// Loads configuration from config files
@@ -102,12 +113,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
             Ok(response) => {
                 // Log response info
                 println!("Response status: {}", response.status());
-                println!("Response headers:");
-                for (name, value) in response.headers() {
-                    if let Ok(v) = value.to_str() {
-                        println!("  {}: {}", name, v);
-                    }
-                }
                 
                 // Check if successful
                 if response.status().is_success() {
@@ -119,8 +124,35 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             // Parse as JSON, printing the result if successful
                             match serde_json::from_slice::<serde_json::Value>(&bytes) {
                                 Ok(json) => {
-                                    let formatted_json = serde_json::to_string_pretty(&json)?;
-                                    println!("Response from NVIDIA API:\n{}", formatted_json);
+                                    // Check for product availability
+                                    println!("\n=== PRODUCT AVAILABILITY CHECK ===");
+                                    
+                                    if let Some(searched_products) = json["searchedProducts"].as_object() {
+                                        if let Some(product_details) = searched_products.get("productDetails") {
+                                            if let Some(products) = product_details.as_array() {
+                                                if products.is_empty() {
+                                                    println!("No products found in the API response.");
+                                                } else {
+                                                    for product in products {
+                                                        let (name, available) = check_product_availability(
+                                                            product, 
+                                                            &config.default_links.rtx_5080,
+                                                            &config.default_links.rtx_5090
+                                                        );
+                                                        let status = if available { "AVAILABLE" } else { "NOT AVAILABLE" };
+                                                        println!("{}: {}", name, status);
+                                                    }
+                                                }
+                                            } else {
+                                                println!("productDetails is not an array");
+                                            }
+                                        } else {
+                                            println!("productDetails not found in the response");
+                                        }
+                                    } else {
+                                        println!("searchedProducts not found in the response");
+                                    }
+                                    
                                     return Ok(());
                                 },
                                 Err(e) => {
