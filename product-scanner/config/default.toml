@@ -32,3 +32,12 @@ sec_ch_ua_platform = "\"Windows\""
 [default_links]
 rtx_5080 = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-geforce-rtx-5080/"
 rtx_5090 = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-geforce-rtx-5090/"
+
+# Purchase settings
+[purchase]
+enabled = true # Whether to attempt purchases when products are available
+# List of product names to purchase when available
+product_names = [
+    "GeForce RTX 5080",
+    "GeForce RTX 5090"
+]

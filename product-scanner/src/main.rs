@@ -10,12 +10,20 @@ use std::fs::File;
 use reqwest;
 use config::Config as AppConfig;
 use tokio;
+use std::env;
 
 mod product_checker;
-use product_checker::{check_nvidia_api, ApiConfig, HeadersConfig, DefaultLinksConfig, RequestConfig};
+mod launch_purchase;
+
+use product_checker::{check_nvidia_api, ApiConfig, HeadersConfig, DefaultLinksConfig, RequestConfig, simulate_available_product};
+use launch_purchase::PurchaseConfig;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Check for test mode
+    let args: Vec<String> = env::args().collect();
+    let test_mode = args.len() > 1 && args[1] == "--test";
+    
     // Set up logging
     let log_file = File::create("nvidia_product_checker.log")?;
     CombinedLogger::init(vec![
@@ -39,6 +47,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Extract default links
     let default_link_5080 = settings.get_string("default_links.rtx_5080")?;
     let default_link_5090 = settings.get_string("default_links.rtx_5090")?;
+    
+    // Extract purchase configuration
+    let purchase_enabled = settings.get_bool("purchase.enabled").unwrap_or(false);
+    let purchase_product_names: Vec<String> = settings
+        .get_array("purchase.product_names")
+        .unwrap_or_default()
+        .iter()
+        .filter_map(|v| v.clone().into_string().ok())
+        .collect();
     
     // Extract headers
     let user_agent = settings.get_string("headers.user_agent")?;
@@ -88,6 +105,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         },
     };
     
+    // Create purchase configuration
+    let purchase_config = PurchaseConfig {
+        enabled: purchase_enabled,
+        product_names: purchase_product_names,
+    };
+    
     // Create HTTP client with timeout
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(timeout_secs))
@@ -97,6 +120,30 @@ async fn main() -> Result<(), Box<dyn Error>> {
     
     println!("[{}] Configuration loaded successfully", Local::now().format("%Y-%m-%d %H:%M:%S"));
     info!("Configuration loaded successfully");
+    
+    // If in test mode, run the test and exit
+    if test_mode {
+        println!("[{}] Running in TEST MODE", Local::now().format("%Y-%m-%d %H:%M:%S"));
+        info!("Running in TEST MODE");
+        
+        // Test with RTX 5080
+        if let Err(e) = simulate_available_product("GeForce RTX 5090", &purchase_config).await {
+            error!("Failed to simulate product availability: {}", e);
+            println!("[{}] Failed to simulate product availability: {}", 
+                     Local::now().format("%Y-%m-%d %H:%M:%S"), e);
+        }
+        
+        // Test with a non-configured product
+        if let Err(e) = simulate_available_product("Some Other GPU", &purchase_config).await {
+            error!("Failed to simulate product availability: {}", e);
+            println!("[{}] Failed to simulate product availability: {}", 
+                     Local::now().format("%Y-%m-%d %H:%M:%S"), e);
+        }
+        
+        println!("[{}] Test completed, exiting", Local::now().format("%Y-%m-%d %H:%M:%S"));
+        info!("Test completed, exiting");
+        return Ok(());
+    }
     
     // Set up Ctrl+C handler
     let running = Arc::new(AtomicBool::new(true));
@@ -120,7 +167,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         cycle += 1;
         
         // Check NVIDIA API
-        if let Err(e) = check_nvidia_api(&api_config, &client, cycle).await {
+        if let Err(e) = check_nvidia_api(&api_config, &client, &purchase_config, cycle).await {
             error!("Cycle #{} - Failed to check NVIDIA API: {}", cycle, e);
         }
         

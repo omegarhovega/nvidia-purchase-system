@@ -5,24 +5,28 @@ use chrono::Local;
 use log::{info, warn, error};
 use reqwest;
 
+use crate::launch_purchase::{launch_purchase, should_attempt_purchase, PurchaseConfig};
+
 /// Checks if a product is available by examining its directPurchaseLink
-pub fn check_product_availability(product: &Value, default_link_5080: &str, default_link_5090: &str) -> (String, bool) {
+pub fn check_product_availability(product: &Value, default_link_5080: &str, default_link_5090: &str) -> (String, bool, String) {
     // Extract the product display name
     let display_name = product["displayName"].as_str().unwrap_or("Unknown Product");
+    let mut purchase_link = String::new();
     
     // Check if the product has retailers
     if let Some(retailers) = product["retailers"].as_array() {
         for retailer in retailers {
             if let Some(link) = retailer["directPurchaseLink"].as_str() {
+                purchase_link = link.to_string();
                 // Check if the link is one of the default values
                 if link != default_link_5080 && link != default_link_5090 {
-                    return (display_name.to_string(), true);
+                    return (display_name.to_string(), true, purchase_link);
                 }
             }
         }
     }
     
-    (display_name.to_string(), false)
+    (display_name.to_string(), false, purchase_link)
 }
 
 /// Configuration struct needed for API requests
@@ -69,6 +73,7 @@ pub struct RequestConfig {
 pub async fn check_nvidia_api(
     config: &ApiConfig, 
     client: &reqwest::Client,
+    purchase_config: &PurchaseConfig,
     cycle: u64
 ) -> Result<(), Box<dyn Error>> {
     let start_time = Instant::now();
@@ -140,12 +145,27 @@ pub async fn check_nvidia_api(
                                                              Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
                                                 } else {
                                                     for product in products {
-                                                        let (name, available) = check_product_availability(
+                                                        let (name, available, link) = check_product_availability(
                                                             product, 
                                                             &config.default_links.rtx_5080,
                                                             &config.default_links.rtx_5090
                                                         );
                                                         let status = if available { "AVAILABLE" } else { "NOT AVAILABLE" };
+                                                        
+                                                        // If product is available and should be purchased, launch purchase process
+                                                        if available && should_attempt_purchase(&name, purchase_config) {
+                                                            info!("Cycle #{} - Product '{}' is available, launching purchase process", cycle, name);
+                                                            println!("[{}] Cycle #{} - Product '{}' is available, launching purchase process", 
+                                                                     Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, name);
+                                                            
+                                                            // Launch the purchase process
+                                                            if let Err(e) = launch_purchase(&name, &link).await {
+                                                                error!("Cycle #{} - Failed to launch purchase for '{}': {}", cycle, name, e);
+                                                                println!("[{}] Cycle #{} - ❌ Failed to launch purchase for '{}': {}", 
+                                                                         Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, name, e);
+                                                            }
+                                                        }
+                                                        
                                                         product_statuses.push((name, status.to_string()));
                                                     }
                                                 }
@@ -242,4 +262,32 @@ pub async fn check_nvidia_api(
     error!("{}", summary);
     
     Err(error_msg.into())
+}
+
+/// For testing purposes only: Simulates a product being available
+pub async fn simulate_available_product(product_name: &str, purchase_config: &crate::launch_purchase::PurchaseConfig) -> Result<(), Box<dyn Error>> {
+    use chrono::Local;
+    use crate::launch_purchase::{launch_purchase, should_attempt_purchase};
+    
+    let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let test_link = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-geforce-rtx-5090/TEST";
+    
+    println!("\n[{}] 🧪 TEST MODE: Simulating product availability for '{}'", timestamp, product_name);
+    
+    // Check if we should attempt purchase for this product
+    if should_attempt_purchase(product_name, purchase_config) {
+        println!("[{}] 🧪 TEST MODE: Product '{}' is available, launching purchase process", 
+                 Local::now().format("%Y-%m-%d %H:%M:%S"), product_name);
+        
+        // Launch the purchase process
+        if let Err(e) = launch_purchase(product_name, test_link).await {
+            println!("[{}] 🧪 TEST MODE: ❌ Failed to launch purchase for '{}': {}", 
+                     Local::now().format("%Y-%m-%d %H:%M:%S"), product_name, e);
+        }
+    } else {
+        println!("[{}] 🧪 TEST MODE: Product '{}' would not trigger a purchase (not in configured product list)", 
+                 Local::now().format("%Y-%m-%d %H:%M:%S"), product_name);
+    }
+    
+    Ok(())
 }
