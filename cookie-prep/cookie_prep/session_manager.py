@@ -17,8 +17,7 @@ from captcha import (
     solve_captcha,
     submit_captcha_solution,
 )
-from cookies import save_all_cookies
-from utils import check_for_cf_clearance
+from cookies import save_all_cookies, check_for_cf_clearance
 from logger import logger
 
 
@@ -161,8 +160,6 @@ async def main():
         result = await run_session_manager(attempt=1, max_attempts=3)
 
         # Double-check the result with check_for_cf_clearance function
-        from utils import check_for_cf_clearance
-
         cf_cookie_exists = check_for_cf_clearance()
 
         if result and cf_cookie_exists:

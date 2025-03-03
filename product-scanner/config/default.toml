@@ -5,11 +5,11 @@ url = "https://api.nvidia.partners/edge/product/search?page=1&limit=9&manufactur
 
 # Request settings
 [request]
-timeout_secs = 30
-connect_timeout_secs = 15
-max_attempts = 4
-sleep_ms_min = 500
-sleep_ms_max = 1000
+timeout_secs = 30 # API request timeout in seconds
+connect_timeout_secs = 15 # API connection timeout in seconds
+max_attempts = 4 # max number of attempts to make the request
+sleep_ms_min = 500 # min time between requests in ms
+sleep_ms_max = 1000 # max time between requests in ms
 
 # Browser emulation headers
 [headers]
