@@ -266,27 +266,33 @@ pub async fn check_nvidia_api(
 
 /// For testing purposes only: Simulates a product being available
 pub async fn simulate_available_product(product_name: &str, purchase_config: &crate::launch_purchase::PurchaseConfig) -> Result<(), Box<dyn Error>> {
-    use chrono::Local;
-    use crate::launch_purchase::{launch_purchase, should_attempt_purchase};
+    println!("\n[{}] 🧪 TEST MODE: Simulating product availability for '{}'", 
+             Local::now().format("%Y-%m-%d %H:%M:%S"), product_name);
     
-    let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-    let test_link = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-geforce-rtx-5090/TEST";
-    
-    println!("\n[{}] 🧪 TEST MODE: Simulating product availability for '{}'", timestamp, product_name);
-    
-    // Check if we should attempt purchase for this product
-    if should_attempt_purchase(product_name, purchase_config) {
-        println!("[{}] 🧪 TEST MODE: Product '{}' is available, launching purchase process", 
+    // Check if this product should trigger a purchase based on configuration
+    if !crate::launch_purchase::should_attempt_purchase(product_name, purchase_config) {
+        println!("[{}] 🧪 TEST MODE: Product '{}' would not trigger a purchase (not in configured product list)", 
                  Local::now().format("%Y-%m-%d %H:%M:%S"), product_name);
-        
-        // Launch the purchase process
-        if let Err(e) = launch_purchase(product_name, test_link).await {
+        return Ok(());
+    }
+    
+    // Simulate the product being available
+    println!("[{}] 🧪 TEST MODE: Product '{}' is available, launching purchase process", 
+             Local::now().format("%Y-%m-%d %H:%M:%S"), product_name);
+    
+    // Use a realistic purchase URL for testing - the one that works with the standalone Python script
+    let purchase_url = "https://www.proshop.de/Basket/BuyNvidiaGraphicCard?t=C8HgkfqkAbdVIyPnb%2B%2BHQOoYO6UhnuDDA8853HMVzu6Wh3v2YAtSuPC5hOcGnQqGZve77PQt9%2FdBgsLw327GJu35bgsktZFF01sZq2Ggu5VIedzHT6GMr%2BVdEl%2BqK6TJO6kIOoOFHkGPYbDnU8scv53inA8cgPvwQ4n8soRyD7EDfEYavWDPah8%2B%2BIPQye8LL8ymAba361B0pjcQgb1L2a4ap8SgOYum1voEi19FqaiPbcOn%2F1tmFZfTqw38ZrsV0wrokDAOcjaGLeiD5ujyc%2F9uY7GAJRGtEasilCzFJhECHYSimA9q8Pd9vJh%2FVhd9j%2BW3WlTmmTM4Pt3vimM2KQ%3D%3D";
+    
+    // Launch the purchase process with the test URL
+    match crate::launch_purchase::launch_purchase(product_name, purchase_url).await {
+        Ok(_) => {
+            println!("[{}] 🧪 TEST MODE: ✅ Purchase successfully launched for '{}'", 
+                     Local::now().format("%Y-%m-%d %H:%M:%S"), product_name);
+        },
+        Err(e) => {
             println!("[{}] 🧪 TEST MODE: ❌ Failed to launch purchase for '{}': {}", 
                      Local::now().format("%Y-%m-%d %H:%M:%S"), product_name, e);
         }
-    } else {
-        println!("[{}] 🧪 TEST MODE: Product '{}' would not trigger a purchase (not in configured product list)", 
-                 Local::now().format("%Y-%m-%d %H:%M:%S"), product_name);
     }
     
     Ok(())
