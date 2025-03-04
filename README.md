@@ -4,9 +4,9 @@ An automated system for monitoring and purchasing NVIDIA GPUs when they become a
 
 ## Project Structure
 
-This project is organized into three main components:
+This project is organized into four main components:
 
-1. **purchase-core** (Rust): Core purchasing functionality
+1. **purchase-core** (Python): Core purchasing functionality
    - HTTP client handling
    - Cookie management
    - Purchase automation
@@ -21,6 +21,12 @@ This project is organized into three main components:
    - Use script to inject to nvidia shop homepage and show button using old purchase link
    - Follow old purchase link Using 2Captcha to solve Cloudflare challenge
    - Obtain and save cf_clearance cookie
+
+4. **nvidia_purchase_coordinator.py** (Python): Top-level coordination
+   - Orchestrates all system components
+   - Manages cookie refreshes on a schedule
+   - Starts and monitors product scanner
+   - Provides unified logging and error handling
 
 ## Setup Instructions
 
@@ -40,7 +46,7 @@ This project is organized into three main components:
    cd ../product-scanner
    cargo build
    ```
-3. Set up the Python component:
+3. Set up the Python components:
    ```
    cd cookie-prep
    pip install -r requirements.txt
@@ -82,7 +88,24 @@ product_names = [
 
 ## Usage
 
-### Running the Product Scanner
+### Running the Complete System (Recommended)
+
+The easiest way to run the system is using the coordinator script, which manages all components:
+
+```bash
+# From the root directory of the project
+python nvidia_purchase_coordinator.py
+```
+
+This will:
+1. Run the session manager to get fresh cookies
+2. Start the product scanner to monitor for available products
+3. Periodically refresh cookies (every 12-15 minutes)
+4. Handle errors and restart components as needed
+
+### Running Components Individually
+
+#### Running the Product Scanner Directly
 
 ```bash
 # Run the product scanner in normal mode
@@ -98,6 +121,22 @@ The product scanner will:
 2. When a product becomes available, it will automatically initiate the purchase process
 3. Log all activities to both the console and a log file (`nvidia_product_checker.log`)
 
+#### Running Cookie Preparation Manually
+
+```bash
+# From the cookie-prep directory
+cd cookie-prep
+python -c "import asyncio; from cookie_prep.session_manager import main; asyncio.run(main())"
+```
+
+#### Testing the Purchase Method
+
+```bash
+# From the purchase-core/src directory
+cd purchase-core/src
+python purchase_method.py [purchase_url]
+```
+
 ### Test Mode
 
 The test mode simulates product availability without making actual API calls. This is useful for testing the purchase functionality without waiting for products to become available.
@@ -107,11 +146,49 @@ When running in test mode, the scanner will:
 2. Test the purchase initiation process
 3. Exit after completing the tests
 
-### Stopping the Scanner
+### Testing Purchase Integration
 
-Press `Ctrl+C` to gracefully stop the product scanner.
+To test the complete purchase flow without waiting for actual product availability:
+
+```bash
+# From the product-scanner directory
+cd product-scanner
+cargo run -- --test
+```
+
+This will:
+1. Load your configuration from default.toml
+2. Simulate an available product (e.g., "GeForce RTX 5080")
+3. Trigger the purchase flow by calling purchase_method.py with the product URL
+4. Log the results of the test
+
+This test verifies that:
+- The product scanner correctly identifies configured products
+- The launch_purchase module properly executes the purchase script
+- The purchase_method.py script is called with the correct parameters
+- The entire purchase flow works end-to-end
+
+You can modify which products are tested by changing the `product_names` list in the `[purchase]` section of your configuration file.
+
+### Stopping the System
+
+Press `Ctrl+C` to gracefully stop all components.
 
 ## Implementation Details
+
+### System Architecture
+
+The system operates as a pipeline:
+
+1. **Cookie Preparation**: Obtains and maintains valid Cloudflare cookies
+2. **Product Scanner**: Continuously monitors for product availability
+3. **Purchase Process**: When a product is available, automatically attempts to purchase it
+
+### Component Integration
+
+- When the product scanner detects an available product, it calls the purchase_method.py script with the purchase link
+- The coordinator script ensures cookies are constantly refreshed to maintain session validity
+- All components share cookies through the shared/scripts/captured_cookies.json file
 
 ### Product Scanner
 
@@ -121,13 +198,41 @@ The product scanner consists of three main modules:
 2. **product_checker.rs**: API interaction and product availability checking
 3. **launch_purchase.rs**: Purchase initiation when products are available
 
-When a product is detected as available, the scanner will:
-1. Check if the product is in the configured list of products to purchase
-2. If it is, launch the purchase process with the product name and link
-
 ### Purchase Core
 
-The purchase core component is responsible for the actual purchase process. It is currently in development and will be integrated with the product scanner in the future.
+The purchase core component handles the actual purchase process:
+
+1. **purchase_method.py**: 
+   - Loads cookies from shared/scripts/captured_cookies.json
+   - Makes authenticated requests to purchase links
+   - Follows redirects and maintains session state
+   - Logs results and saves updated cookies
+
+### Cookie Preparation
+
+The cookie-prep component handles browser automation to solve Cloudflare challenges:
+
+1. **session_manager.py**:
+   - Uses browser automation to navigate to NVIDIA website
+   - Handles Cloudflare challenges and CAPTCHAs
+   - Saves cookies to shared/scripts/captured_cookies.json
+
+### Coordinator
+
+The coordinator (nvidia_purchase_coordinator.py) orchestrates the entire system:
+
+1. Handles startup sequence:
+   - First runs session_manager to get initial cookies
+   - Then starts the product scanner
+
+2. Manages runtime operations:
+   - Runs cookie refresh on a schedule (12-15 minute intervals)
+   - Monitors product scanner health
+   - Provides consolidated logging
+
+3. Handles shutdown:
+   - Gracefully stops all components
+   - Ensures clean process termination
 
 ## Development
 
