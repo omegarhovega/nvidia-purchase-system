@@ -1,0 +1,81 @@
+{
+  "timestamp": "2025-03-04T15:55:58",
+  "cookies": [
+    {
+      "name": "AMCV_F207D74D549850760A4C98C6%40AdobeOrg",
+      "value": "179643557%7CMCMID%7C49635967705391634020102786925155843507%7CMCAID%7CNONE%7CMCOPTOUT-1741106153s%7CNONE%7CvVersion%7C5.5.0"
+    },
+    {
+      "name": "OptanonConsent",
+      "value": "isGpcEnabled=1\u0026datestamp=Tue+Mar+04+2025+15%3A35%3A54+GMT%2B0100+(Mitteleurop%C3%A4ische+Normalzeit)\u0026version=202410.1.0\u0026browserGpcFlag=1\u0026isIABGlobal=false\u0026hosts=\u0026consentId=78048035-bebc-49c2-b342-53ea53bef21f\u0026interactionCount=0\u0026isAnonUser=1\u0026landingPath=https%3A%2F%2Fmarketplace.nvidia.com%2Fde-de%2Fconsumer%2Fgraphics-cards%2F%3Flocale%3Dde-de%26page%3D1%26limit%3D12%26gpu%3DRTX%25205090%26manufacturer%3DNVIDIA%26manufacturer_filter%3DNVIDIA~1\u0026groups=C0001%3A1%2CC0002%3A0%2CC0003%3A0%2CC0004%3A0"
+    },
+    {
+      "name": "_evga_7830",
+      "value": "{%22uuid%22:%22f9abee411ff5904e%22}"
+    },
+    {
+      "name": "ASP.NET_SessionId",
+      "value": "gwwiembevfvzucxpzusxnvms"
+    },
+    {
+      "name": "bm_sv",
+      "value": "C4BB1226692114F6D64B6427F87FDE60~YAAQYbMUAqSKGEqVAQAAvESWYRvP/sLy2aCTiyvkC3cAIWz2SKUDSnSvZLg191c6B+i2GVFsvsVNBZMH36kwsgA/gLFoHB9z2Jffya6+Xvd+L8oCz7EuZjc+/ynDU7dwVYXydMN7mTCcYh2dYv2EZ0cRlouiF5Bh/usB6GRg4n7hJ4LvwmU+i9KGuSPSs/m7ArjFsKhturKtXzeCuq8MLLEo29MWiY8l8SLskTiMb8KNXayiR2qMZ4vKcpnO1Iywyg==~1"
+    },
+    {
+      "name": "ak_bmsc",
+      "value": "57722B70780CB7ABAA479777AE4EBCB4~000000000000000000000000000000~YAAQyKDVF4mlXVyVAQAARA+oYRtsvsOLsl01/oFRqMPyxkngYKdN+nm2bA7BkEnbszBAS7w2mw8FT3vvX9hC95afG4ZV9xTEEfOz5N2nQjV8IotkQaQ3o3P7Enr/EVCYm7Y7CZ55pFGJmr2agnZXjImWbw7/212fjfh9LYivUtbYH4C6KHNzLPnI4znEt9bPTRmurcj7mp2TsYu8501KfEOWItk/A6tW29Bf1WsU/eshz1qvw7CaVSt0Yj8Li4RWeQ2PDUV6lLFTIWbDTyQxAn+IvY1NeNv39ZUq3+6gBBTmdZU70/dhJktuJ76r6oNjNM3QBG+aRmdkEvGSwpGSLGb3jdYJIEPr4GpcuXy381/hN6sAJve1fenuYnZMWk8riq40O9INhDKZ"
+    },
+    {
+      "name": "s_sq",
+      "value": "%5B%5BB%5D%5D"
+    },
+    {
+      "name": "cf_clearance",
+      "value": "z7b2E3onfbU3ARsaSrDgCU7SPNn0T72RccOEP7lyDVQ-1741098989-1.2.1.1-VxnTDJlsILXqJMq9283d0d7_DKyexvQ0FimM4UlSgTVxMRiy8PQesZvZ_CNhFAZldqK8w9L1ue2AeEl7fdIN_CRxvh2itL_oJBR0754wNKH12Z5haT05PzZO9.YVcoAqMFsaXjd.oDO.y9vdmrNsXBTI98qnuXTrKQFuw4Bb3e5Pb0EsDgjnwispP1iJu0lxFR5KX6C0rBWaQ3FWLmt5UZiILWCvEjyvZSr9SPS1mZOvmEhIRrVJlr64JjlxppkKqbN1TNfZUKoJNkY3TrUbH8cVDv5n.kUQFP2cvRto2yh3r7JsiqrI2iPtz0UwE9kOsj2nSIolaG8C8QdQxCYYvfr0098Bgi_af6xOd1xSpCq_XTBRd.RL9Yh3mWX5EjHgpCD8B6Ne.olB7KIdX1XzwsLRQJKffYFAWSs2rOGjAj53JqOOH_yRmsrT9KVqWjhLhSyLq00iDBDORzMHfQC3JQ"
+    },
+    {
+      "name": "bm_mi",
+      "value": "24CBB59DE21A908A87FEDEC8E6A107C7~YAAQyKDVF4qlXVyVAQAARA+oYRuwsqdo+9EZH8OBe37pXUV6ZMrUnuCVeUt10eA388nFLonSW364XEqaDtDEZSZ4koiEfYxg7vs5/RUen/iRSaz6eQouRSNBradMIfZgwKDTk9eH82+usDvAWvUly0eSHcgKUmJCZYhEGF1QgWeyeKY7oWyBJFKk5xs+XawdO9sd0Fg4zJrtI9xLZupAQZJnQxAMNYx0Mt61GDpHU9rkRWxmIX4CRkMNQ08vQvia91j0OTLLdzZHKw3E9Z0ATtywqKetCDgK9Ob7zanYtHLZfyiSnPgR/lYmGbQfypGHiad0g8CeSPqvkg==~1"
+    },
+    {
+      "name": "AMCVS_F207D74D549850760A4C98C6%40AdobeOrg",
+      "value": "1"
+    },
+    {
+      "name": "_cs_mk",
+      "value": "0.929963673016857_1741098953969"
+    },
+    {
+      "name": "s_cc",
+      "value": "true"
+    },
+    {
+      "name": "_cs_id",
+      "value": "cfa989a7-b2f4-a225-a990-2c3a2d398361.1741098954.1.1741098954.1741098954.1.1775262954015.1.x"
+    },
+    {
+      "name": "s_getNewRepeat",
+      "value": "1741098953862-New"
+    },
+    {
+      "name": "_cs_s",
+      "value": "1.0.0.9.1741100754021"
+    },
+    {
+      "name": "_sfid_eb78",
+      "value": "{%22anonymousId%22:%22f9abee411ff5904e%22%2C%22consents%22:[{%22consent%22:{%22purpose%22:%22Personalization%22%2C%22provider%22:%22Consent%20Manager%22%2C%22status%22:%22Opt%20In%22}%2C%22lastUpdateTime%22:%222025-03-04T14:35:54.778Z%22%2C%22lastSentTime%22:%222025-03-04T14:35:54.884Z%22}]}"
+    },
+    {
+      "name": "s_ecid",
+      "value": "MCMID%7C49635967705391634020102786925155843507"
+    },
+    {
+      "name": "_cs_c",
+      "value": "0"
+    },
+    {
+      "name": "__cf_bm",
+      "value": "JM2fFgpjrZavrqcL0a_EHEY4Hh9mtwHg1BVKuVH.98M-1741098964-1.0.1.1-Lls56K4rZYRgtVFsHk.xnmItqhbev83IIAhZdRAE1emwtOFo_XEimlpy8wEklvLDcZnzixAWprtqRFaQdUSk9p7HLeoemW0PFcq6XoG.nl3fQH8lFdUwIVPvwbfTLJuH"
+    }
+  ]
+}

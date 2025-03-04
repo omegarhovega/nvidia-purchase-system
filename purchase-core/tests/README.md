@@ -14,10 +14,14 @@ A simple Rust script that queries the NVIDIA store and returns the server reply/
 
 ## Usage
 
-Run the script with:
+Run the scripts with:
 
 ```bash
 cargo run --bin nvidia-store-check
+```
+
+```bash
+cargo run --bin fast-purchase
 ```
 
 ## What it does

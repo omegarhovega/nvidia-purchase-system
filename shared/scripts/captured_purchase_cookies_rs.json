@@ -1,0 +1,100 @@
+{
+  "cookies": [
+    {
+      "domain": ".nvidia.com",
+      "name": "bm_sv",
+      "value": "C4BB1226692114F6D64B6427F87FDE60~YAAQ0aDVFzd3D2CVAQAAN8+lYRu38LecIYmheppN0NEOIhXGcEOrv0C76CpL4fogfkjLob+xB9k++oLVCQUgwvU182gT0el4Cws4QJQwFQ3dhdC+DjfIlkzI7bZczgMTe1q/aCxGUidyv1SoeJYyjADVB/mx5zevv0ltJ6MUKj8kfLupdkEnnNZ5lcMcGBr04YFuaIaTsbXcCecOFInxEVcKnSsD2tQC9HY5XeZsbA4DTqKzklSD/n0yIUBEVlqvqA==~1"
+    },
+    {
+      "domain": ".nvidia.com",
+      "name": "bm_mi",
+      "value": "AB551B225684230E8CF8D1222F4DFCA3~YAAQYbMUAhWCGEqVAQAAf62VYRsomolDQlINBjnFJVMnKp21PjYbtAZRSpFvHNVpb22f98irsoKlwT2DJ+05gDMahbC362fZl9PovOjVLsxHcZUFO30WMfkeg7DAqK/4Z5MI69MbN/zw4sL9DI73SDVK7LBfEj1NoAs/8l4w3/rsRqUsr+fCAUe4Zuqd39EX+ZMFkl/0kQzhXeoV6W6+JqQQ0AaJKz0DwVtPC+JOQ15tC85TUHRNKNER/oJOCtVT9HzREY1gs52pPG1mACloH5bGICUCp+ob7koEp9F2OEEw/Wxji3gJxXKcjWRxeFKNN87eS3QfqNzc0XGJZpuPAJPnCEIviMsQ1g==~1"
+    },
+    {
+      "domain": ".nvidia.com",
+      "name": "s_getNewRepeat",
+      "value": "1741098953862-New"
+    },
+    {
+      "domain": ".nvidia.com",
+      "name": "s_ecid",
+      "value": "MCMID%7C49635967705391634020102786925155843507"
+    },
+    {
+      "domain": ".nvidia.com",
+      "name": "AMCVS_F207D74D549850760A4C98C6%40AdobeOrg",
+      "value": "1"
+    },
+    {
+      "domain": ".nvidia.com",
+      "name": "AMCV_F207D74D549850760A4C98C6%40AdobeOrg",
+      "value": "179643557%7CMCMID%7C49635967705391634020102786925155843507%7CMCAID%7CNONE%7CMCOPTOUT-1741106153s%7CNONE%7CvVersion%7C5.5.0"
+    },
+    {
+      "domain": ".nvidia.com",
+      "name": "_cs_mk",
+      "value": "0.929963673016857_1741098953969"
+    },
+    {
+      "domain": ".nvidia.com",
+      "name": "s_cc",
+      "value": "true"
+    },
+    {
+      "domain": ".nvidia.com",
+      "name": "_cs_c",
+      "value": "0"
+    },
+    {
+      "domain": ".nvidia.com",
+      "name": "_cs_id",
+      "value": "cfa989a7-b2f4-a225-a990-2c3a2d398361.1741098954.1.1741098954.1741098954.1.1775262954015.1.x"
+    },
+    {
+      "domain": ".nvidia.com",
+      "name": "_cs_s",
+      "value": "1.0.0.9.1741100754021"
+    },
+    {
+      "domain": ".nvidia.com",
+      "name": "ak_bmsc",
+      "value": "681798CBC4BDE36B8759AF1171713532~000000000000000000000000000000~YAAQYbMUAjWCGEqVAQAAKbCVYRt5OeyeVz8QiqJgSma2ahTrz+zLMuqvUhroke/kxEFtvyCBmAacpL4yv6FpnX99RVXx/fp1b99ePs9ueON5KUKDnTqxNave/nYHzbpsO9KXK+ByZ07zsLvS0LZKIQo+rW2cX0zVtOg51AEhwNKkLiWPPAMcZVOJMJFP2qLB+6Qmey3F3IONol09XsSeb4CVv1wXPokuqwJFPGLM1JwYe/mHQ+RpBw++De6Ihj8CMvb9sgmUb3gqh6HSydMhVPwXi2xHwRiTe0m9OJXzEmAScXXGCFng0Gat/TDdd7qW218TW1h9U1oH9XznZOhgiAiJc/ULk17DcWtDoVZO2HDl7ZwECVvttmQqYz816AnrT8tu0OQywy+QLcDPuOlUlajq5dy3mg1l4RkVombw/oEjNNah1EvtZk4NO7SNR58MuXSFjp0SHgBkpfTujjXRmCwN6JjtUhc4v6q1TR9MKIqIAd+U8Hg2UFw8jGhSHQlPxxW9tAZ/EBTQ"
+    },
+    {
+      "domain": ".nvidia.com",
+      "name": "OptanonConsent",
+      "value": "isGpcEnabled=1&datestamp=Tue+Mar+04+2025+15%3A35%3A54+GMT%2B0100+(Mitteleurop%C3%A4ische+Normalzeit)&version=202410.1.0&browserGpcFlag=1&isIABGlobal=false&hosts=&consentId=78048035-bebc-49c2-b342-53ea53bef21f&interactionCount=0&isAnonUser=1&landingPath=https%3A%2F%2Fmarketplace.nvidia.com%2Fde-de%2Fconsumer%2Fgraphics-cards%2F%3Flocale%3Dde-de%26page%3D1%26limit%3D12%26gpu%3DRTX%25205090%26manufacturer%3DNVIDIA%26manufacturer_filter%3DNVIDIA~1&groups=C0001%3A1%2CC0002%3A0%2CC0003%3A0%2CC0004%3A0"
+    },
+    {
+      "domain": ".nvidia.com",
+      "name": "_evga_7830",
+      "value": "{%22uuid%22:%22f9abee411ff5904e%22}"
+    },
+    {
+      "domain": ".nvidia.com",
+      "name": "_sfid_eb78",
+      "value": "{%22anonymousId%22:%22f9abee411ff5904e%22%2C%22consents%22:[{%22consent%22:{%22purpose%22:%22Personalization%22%2C%22provider%22:%22Consent%20Manager%22%2C%22status%22:%22Opt%20In%22}%2C%22lastUpdateTime%22:%222025-03-04T14:35:54.778Z%22%2C%22lastSentTime%22:%222025-03-04T14:35:54.884Z%22}]}"
+    },
+    {
+      "domain": ".nvidia.com",
+      "name": "s_sq",
+      "value": "%5B%5BB%5D%5D"
+    },
+    {
+      "domain": ".proshop.de",
+      "name": "__cf_bm",
+      "value": "JM2fFgpjrZavrqcL0a_EHEY4Hh9mtwHg1BVKuVH.98M-1741098964-1.0.1.1-Lls56K4rZYRgtVFsHk.xnmItqhbev83IIAhZdRAE1emwtOFo_XEimlpy8wEklvLDcZnzixAWprtqRFaQdUSk9p7HLeoemW0PFcq6XoG.nl3fQH8lFdUwIVPvwbfTLJuH"
+    },
+    {
+      "domain": ".proshop.de",
+      "name": "cf_clearance",
+      "value": "z7b2E3onfbU3ARsaSrDgCU7SPNn0T72RccOEP7lyDVQ-1741098989-1.2.1.1-VxnTDJlsILXqJMq9283d0d7_DKyexvQ0FimM4UlSgTVxMRiy8PQesZvZ_CNhFAZldqK8w9L1ue2AeEl7fdIN_CRxvh2itL_oJBR0754wNKH12Z5haT05PzZO9.YVcoAqMFsaXjd.oDO.y9vdmrNsXBTI98qnuXTrKQFuw4Bb3e5Pb0EsDgjnwispP1iJu0lxFR5KX6C0rBWaQ3FWLmt5UZiILWCvEjyvZSr9SPS1mZOvmEhIRrVJlr64JjlxppkKqbN1TNfZUKoJNkY3TrUbH8cVDv5n.kUQFP2cvRto2yh3r7JsiqrI2iPtz0UwE9kOsj2nSIolaG8C8QdQxCYYvfr0098Bgi_af6xOd1xSpCq_XTBRd.RL9Yh3mWX5EjHgpCD8B6Ne.olB7KIdX1XzwsLRQJKffYFAWSs2rOGjAj53JqOOH_yRmsrT9KVqWjhLhSyLq00iDBDORzMHfQC3JQ"
+    },
+    {
+      "domain": "www.proshop.de",
+      "name": "ASP.NET_SessionId",
+      "value": "gwwiembevfvzucxpzusxnvms"
+    }
+  ],
+  "timestamp": "2025-03-04T15:53:30"
+}
