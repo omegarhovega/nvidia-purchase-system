@@ -281,7 +281,7 @@ pub async fn check_nvidia_api(
 }
 
 /// For testing purposes only: Simulates a product being available
-pub async fn simulate_available_product(product_name: &str, purchase_config: &crate::launch_purchase::PurchaseConfig) -> Result<(), Box<dyn Error>> {
+pub async fn simulate_available_product(product_name: &str, purchase_config: &crate::launch_purchase::PurchaseConfig, force_error: bool) -> Result<(), Box<dyn Error>> {
     println!("\n[{}] 🧪 TEST MODE: Simulating product availability for '{}'", 
              Local::now().format("%Y-%m-%d %H:%M:%S"), product_name);
     
@@ -300,7 +300,12 @@ pub async fn simulate_available_product(product_name: &str, purchase_config: &cr
     crate::sound::play_purchase_alert_blocking();
     
     // Use a realistic purchase URL for testing - the one that works with the standalone Python script
-    let purchase_url = "https://www.proshop.de/Basket/BuyNvidiaGraphicCard?t=C8HgkfqkAbdVIyPnb%2B%2BHQOoYO6UhnuDDA8853HMVzu6Wh3v2YAtSuPC5hOcGnQqGZve77PQt9%2FdBgsLw327GJu35bgsktZFF01sZq2Ggu5VIedzHT6GMr%2BVdEl%2BqK6TJO6kIOoOFHkGPYbDnU8scv53inA8cgPvwQ4n8soRyD7EDfEYavWDPah8%2B%2BIPQye8LL8ymAba361B0pjcQgb1L2a4ap8SgOYum1voEi19FqaiPbcOn%2F1tmFZfTqw38ZrsV0wrokDAOcjaGLeiD5ujyc%2F9uY7GAJRGtEasilCzFJhECHYSimA9q8Pd9vJh%2FVhd9j%2BW3WlTmmTM4Pt3vimM2KQ%3D%3D";
+    let purchase_url = if force_error {
+        // Invalid URL to force an error
+        "https://invalid-url-to-force-error"
+    } else {
+        "https://www.proshop.de/Basket/BuyNvidiaGraphicCard?t=C8HgkfqkAbdVIyPnb%2B%2BHQOoYO6UhnuDDA8853HMVzu6Wh3v2YAtSuPC5hOcGnQqGZve77PQt9%2FdBgsLw327GJu35bgsktZFF01sZq2Ggu5VIedzHT6GMr%2BVdEl%2BqK6TJO6kIOoOFHkGPYbDnU8scv53inA8cgPvwQ4n8soRyD7EDfEYavWDPah8%2B%2BIPQye8LL8ymAba361B0pjcQgb1L2a4ap8SgOYum1voEi19FqaiPbcOn%2F1tmFZfTqw38ZrsV0wrokDAOcjaGLeiD5ujyc%2F9uY7GAJRGtEasilCzFJhECHYSimA9q8Pd9vJh%2FVhd9j%2BW3WlTmmTM4Pt3vimM2KQ%3D%3D"
+    };
     
     // Launch the purchase process with the test URL
     match crate::launch_purchase::launch_purchase(product_name, purchase_url).await {
@@ -311,6 +316,8 @@ pub async fn simulate_available_product(product_name: &str, purchase_config: &cr
         Err(e) => {
             println!("[{}] 🧪 TEST MODE: ❌ Failed to launch purchase for '{}': {}", 
                      Local::now().format("%Y-%m-%d %H:%M:%S"), product_name, e);
+            // Play the error sound for consistent behavior with the real code
+            crate::sound::play_error_alert();
         }
     }
     

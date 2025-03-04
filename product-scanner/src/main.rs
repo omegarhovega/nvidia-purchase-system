@@ -23,7 +23,8 @@ use launch_purchase::PurchaseConfig;
 async fn main() -> Result<(), Box<dyn Error>> {
     // Check for test mode
     let args: Vec<String> = env::args().collect();
-    let test_mode = args.len() > 1 && args[1] == "--test";
+    let test_mode = args.len() > 1 && (args[1] == "--test" || args[1] == "--test-error");
+    let test_error_mode = args.len() > 1 && args[1] == "--test-error";
     
     // Set up logging
     let log_file = File::create("nvidia_product_checker.log")?;
@@ -124,18 +125,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
     
     // If in test mode, run the test and exit
     if test_mode {
-        println!("[{}] Running in TEST MODE", Local::now().format("%Y-%m-%d %H:%M:%S"));
-        info!("Running in TEST MODE");
+        println!("[{}] Running in TEST MODE{}", 
+                Local::now().format("%Y-%m-%d %H:%M:%S"),
+                if test_error_mode { " (with forced error)" } else { "" });
+        info!("Running in TEST MODE{}", if test_error_mode { " (with forced error)" } else { "" });
         
         // Test with RTX 5090
-        if let Err(e) = simulate_available_product("GeForce RTX 5090", &purchase_config).await {
+        if let Err(e) = simulate_available_product("GeForce RTX 5090", &purchase_config, test_error_mode).await {
             error!("Failed to simulate product availability: {}", e);
             println!("[{}] Failed to simulate product availability: {}", 
                      Local::now().format("%Y-%m-%d %H:%M:%S"), e);
         }
         
         // Test with a non-configured product
-        if let Err(e) = simulate_available_product("Some Other GPU", &purchase_config).await {
+        if let Err(e) = simulate_available_product("Some Other GPU", &purchase_config, false).await {
             error!("Failed to simulate product availability: {}", e);
             println!("[{}] Failed to simulate product availability: {}", 
                      Local::now().format("%Y-%m-%d %H:%M:%S"), e);

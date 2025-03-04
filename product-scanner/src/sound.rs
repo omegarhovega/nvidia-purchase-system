@@ -5,11 +5,6 @@ use std::thread;
 use std::error::Error;
 use log::{info, error};
 
-/// Plays a sound file asynchronously in a separate thread so it doesn't block the main process
-pub fn play_sound(sound_name: &str) {
-    play_sound_with_options(sound_name, false);
-}
-
 /// Plays a sound file with the option to block until it completes
 pub fn play_sound_with_options(sound_name: &str, blocking: bool) {
     let sound_path = get_sound_path(sound_name);
@@ -33,19 +28,14 @@ pub fn play_sound_with_options(sound_name: &str, blocking: bool) {
     }
 }
 
-/// Plays the buy alert sound when a product is found
-pub fn play_purchase_alert() {
-    play_sound("alert_buy.mp3");
-}
-
 /// Plays the buy alert sound when a product is found, blocking until complete
 pub fn play_purchase_alert_blocking() {
     play_sound_with_options("alert_buy.mp3", true);
 }
 
-/// Plays the error alert sound when an error occurs
+/// Plays the error alert sound when an error occurs, blocking until complete
 pub fn play_error_alert() {
-    play_sound("alert_down.mp3");
+    play_sound_with_options("alert_down.mp3", true);
 }
 
 /// Internal function that actually plays the sound
