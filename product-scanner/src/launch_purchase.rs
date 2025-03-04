@@ -2,6 +2,7 @@ use log::info;
 use chrono::Local;
 use std::error::Error;
 use std::process::Command;
+use crate::sound::play_error_alert;
 
 /// Configuration for the purchase launcher
 pub struct PurchaseConfig {
@@ -50,6 +51,7 @@ pub async fn launch_purchase(product_name: &str, product_link: &str) -> Result<(
         info!("Purchase script failed: {}", stderr);
         println!("[{}] ❌ Purchase process failed", timestamp);
         println!("[{}] Error: {}", timestamp, stderr);
+        play_error_alert();
         return Err(format!("Purchase script failed: {}", stderr).into());
     }
     

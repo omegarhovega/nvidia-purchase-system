@@ -6,6 +6,7 @@ use log::{info, warn, error};
 use reqwest;
 
 use crate::launch_purchase::{launch_purchase, should_attempt_purchase, PurchaseConfig};
+use crate::sound::{play_error_alert, play_purchase_alert_blocking};
 
 /// Checks if a product is available by examining its directPurchaseLink
 pub fn check_product_availability(product: &Value, default_link_5080: &str, default_link_5090: &str) -> (String, bool, String) {
@@ -143,6 +144,7 @@ pub async fn check_nvidia_api(
                                                     warn!("Cycle #{} - {}", cycle, msg);
                                                     println!("[{}] Cycle #{} - {}", 
                                                              Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
+                                                    play_error_alert();
                                                 } else {
                                                     for product in products {
                                                         let (name, available, link) = check_product_availability(
@@ -158,11 +160,15 @@ pub async fn check_nvidia_api(
                                                             println!("[{}] Cycle #{} - Product '{}' is available, launching purchase process", 
                                                                      Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, name);
                                                             
+                                                            // Play the purchase alert sound - BLOCKING version to ensure it completes
+                                                            play_purchase_alert_blocking();
+                                                            
                                                             // Launch the purchase process
                                                             if let Err(e) = launch_purchase(&name, &link).await {
                                                                 error!("Cycle #{} - Failed to launch purchase for '{}': {}", cycle, name, e);
                                                                 println!("[{}] Cycle #{} - ❌ Failed to launch purchase for '{}': {}", 
                                                                          Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, name, e);
+                                                                play_error_alert();
                                                             }
                                                         }
                                                         
@@ -174,18 +180,21 @@ pub async fn check_nvidia_api(
                                                 warn!("Cycle #{} - {}", cycle, msg);
                                                 println!("[{}] Cycle #{} - {}", 
                                                          Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
+                                                play_error_alert();
                                             }
                                         } else {
                                             let msg = "productDetails not found in the response";
                                             warn!("Cycle #{} - {}", cycle, msg);
                                             println!("[{}] Cycle #{} - {}", 
                                                      Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
+                                            play_error_alert();
                                         }
                                     } else {
                                         let msg = "searchedProducts not found in the response";
                                         warn!("Cycle #{} - {}", cycle, msg);
                                         println!("[{}] Cycle #{} - {}", 
                                                  Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
+                                        play_error_alert();
                                     }
                                     
                                     // Print and log the results
@@ -217,6 +226,7 @@ pub async fn check_nvidia_api(
                                     println!("[{}] Cycle #{} - {}", 
                                              Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
                                     last_error = Some(msg);
+                                    play_error_alert();
                                 }
                             }
                         },
@@ -226,6 +236,7 @@ pub async fn check_nvidia_api(
                             println!("[{}] Cycle #{} - {}", 
                                      Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
                             last_error = Some(msg);
+                            play_error_alert();
                         }
                     }
                 } else {
@@ -234,6 +245,7 @@ pub async fn check_nvidia_api(
                     println!("[{}] Cycle #{} - {}", 
                              Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
                     last_error = Some(msg);
+                    play_error_alert();
                 }
             },
             Err(e) => {
@@ -242,6 +254,7 @@ pub async fn check_nvidia_api(
                 println!("[{}] Cycle #{} - {}", 
                          Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
                 last_error = Some(msg);
+                play_error_alert();
             }
         }
     }
@@ -261,6 +274,9 @@ pub async fn check_nvidia_api(
     println!("{}", summary);
     error!("{}", summary);
     
+    // Play the error alert sound (non-blocking)
+    play_error_alert();
+    
     Err(error_msg.into())
 }
 
@@ -279,6 +295,9 @@ pub async fn simulate_available_product(product_name: &str, purchase_config: &cr
     // Simulate the product being available
     println!("[{}] 🧪 TEST MODE: Product '{}' is available, launching purchase process", 
              Local::now().format("%Y-%m-%d %H:%M:%S"), product_name);
+    
+    // Play the purchase alert sound for testing - BLOCKING version to ensure it completes
+    crate::sound::play_purchase_alert_blocking();
     
     // Use a realistic purchase URL for testing - the one that works with the standalone Python script
     let purchase_url = "https://www.proshop.de/Basket/BuyNvidiaGraphicCard?t=C8HgkfqkAbdVIyPnb%2B%2BHQOoYO6UhnuDDA8853HMVzu6Wh3v2YAtSuPC5hOcGnQqGZve77PQt9%2FdBgsLw327GJu35bgsktZFF01sZq2Ggu5VIedzHT6GMr%2BVdEl%2BqK6TJO6kIOoOFHkGPYbDnU8scv53inA8cgPvwQ4n8soRyD7EDfEYavWDPah8%2B%2BIPQye8LL8ymAba361B0pjcQgb1L2a4ap8SgOYum1voEi19FqaiPbcOn%2F1tmFZfTqw38ZrsV0wrokDAOcjaGLeiD5ujyc%2F9uY7GAJRGtEasilCzFJhECHYSimA9q8Pd9vJh%2FVhd9j%2BW3WlTmmTM4Pt3vimM2KQ%3D%3D";

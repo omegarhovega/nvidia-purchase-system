@@ -14,6 +14,7 @@ use std::env;
 
 mod product_checker;
 mod launch_purchase;
+mod sound;
 
 use product_checker::{check_nvidia_api, ApiConfig, HeadersConfig, DefaultLinksConfig, RequestConfig, simulate_available_product};
 use launch_purchase::PurchaseConfig;
