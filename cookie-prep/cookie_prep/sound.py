@@ -70,7 +70,7 @@ def play_sound(sound_name, blocking=True):
                 try:
                     import winsound
                     winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
-                    logger.info(f"Played system asterisk sound using winsound")
+                    logger.info("Played system asterisk sound using winsound")
                     return
                 except Exception as e:
                     logger.warning(f"Failed to play with winsound: {e}")
@@ -97,7 +97,7 @@ def play_sound(sound_name, blocking=True):
                     except (subprocess.SubprocessError, FileNotFoundError):
                         continue
             
-            logger.warning(f"Could not find a suitable method to play sound on this system")
+            logger.warning("Could not find a suitable method to play sound on this system")
                 
         except Exception as e:
             logger.error(f"Failed to play sound '{sound_path}': {e}")
