@@ -47,6 +47,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let sleep_ms_max = settings.get_int("request.sleep_ms_max")? as u64;
     
     // Extract default links
+    let default_link_5070 = settings.get_string("default_links.rtx_5070")?;
     let default_link_5080 = settings.get_string("default_links.rtx_5080")?;
     let default_link_5090 = settings.get_string("default_links.rtx_5090")?;
     
@@ -95,6 +96,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             sec_ch_ua_platform,
         },
         default_links: DefaultLinksConfig {
+            rtx_5070: default_link_5070,
             rtx_5080: default_link_5080,
             rtx_5090: default_link_5090,
         },
@@ -132,6 +134,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         
         // Test with RTX 5090
         if let Err(e) = simulate_available_product("GeForce RTX 5090", &purchase_config, test_error_mode).await {
+            error!("Failed to simulate product availability: {}", e);
+            println!("[{}] Failed to simulate product availability: {}", 
+                     Local::now().format("%Y-%m-%d %H:%M:%S"), e);
+        }
+        
+        // Test with RTX 5070
+        if let Err(e) = simulate_available_product("GeForce RTX 5070", &purchase_config, false).await {
             error!("Failed to simulate product availability: {}", e);
             println!("[{}] Failed to simulate product availability: {}", 
                      Local::now().format("%Y-%m-%d %H:%M:%S"), e);

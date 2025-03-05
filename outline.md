@@ -2,7 +2,7 @@
 - Add check for API fields digitalriver and stock >0 as separate fallbacks (then follow direct purchase url)
 - Add sounds
 - Simplify files
-
+- Did not seem to handle case where cookie-getter fails with 403 page gracefully (nvidia_purchase_coordinator seemed stuck?)
 
 # Test
 Ran it without vpn and much faster (3.5 vs 10.2 sec)?

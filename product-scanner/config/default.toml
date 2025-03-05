@@ -30,6 +30,7 @@ sec_ch_ua_platform = "\"Windows\""
 
 # Default purchase links (when these change, the product_checker will mark the product as available)
 [default_links]
+rtx_5070 = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-geforce-rtx-5070/"
 rtx_5080 = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-geforce-rtx-5080/"
 rtx_5090 = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-geforce-rtx-5090/"
 
@@ -38,6 +39,7 @@ rtx_5090 = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-
 enabled = true # Whether to attempt purchases when products are available
 # List of product names to purchase when available
 product_names = [
+    "GeForce RTX 5070",
     "GeForce RTX 5080",
     "GeForce RTX 5090"
 ]

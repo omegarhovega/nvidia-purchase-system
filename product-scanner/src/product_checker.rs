@@ -9,7 +9,7 @@ use crate::launch_purchase::{launch_purchase, should_attempt_purchase, PurchaseC
 use crate::sound::{play_error_alert, play_purchase_alert_blocking};
 
 /// Checks if a product is available by examining its directPurchaseLink
-pub fn check_product_availability(product: &Value, default_link_5080: &str, default_link_5090: &str) -> (String, bool, String) {
+pub fn check_product_availability(product: &Value, default_link_5070: &str, default_link_5080: &str, default_link_5090: &str) -> (String, bool, String) {
     // Extract the product display name
     let display_name = product["displayName"].as_str().unwrap_or("Unknown Product");
     let mut purchase_link = String::new();
@@ -20,7 +20,7 @@ pub fn check_product_availability(product: &Value, default_link_5080: &str, defa
             if let Some(link) = retailer["directPurchaseLink"].as_str() {
                 purchase_link = link.to_string();
                 // Check if the link is one of the default values
-                if link != default_link_5080 && link != default_link_5090 {
+                if link != default_link_5070 && link != default_link_5080 && link != default_link_5090 {
                     return (display_name.to_string(), true, purchase_link);
                 }
             }
@@ -56,6 +56,7 @@ pub struct HeadersConfig {
 }
 
 pub struct DefaultLinksConfig {
+    pub rtx_5070: String,
     pub rtx_5080: String,
     pub rtx_5090: String,
 }
@@ -149,6 +150,7 @@ pub async fn check_nvidia_api(
                                                     for product in products {
                                                         let (name, available, link) = check_product_availability(
                                                             product, 
+                                                            &config.default_links.rtx_5070,
                                                             &config.default_links.rtx_5080,
                                                             &config.default_links.rtx_5090
                                                         );
