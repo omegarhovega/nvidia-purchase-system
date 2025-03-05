@@ -74,6 +74,7 @@ sleep_ms_max = 1000
 
 # Default purchase links (when these change, the product is available)
 [default_links]
+rtx_5070 = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-geforce-rtx-5070/"
 rtx_5080 = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-geforce-rtx-5080/"
 rtx_5090 = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-geforce-rtx-5090/"
 
@@ -81,6 +82,7 @@ rtx_5090 = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-
 [purchase]
 enabled = true
 product_names = [
+    "GeForce RTX 5070",
     "GeForce RTX 5080",
     "GeForce RTX 5090"
 ]

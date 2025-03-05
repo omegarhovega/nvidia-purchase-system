@@ -19,6 +19,7 @@ from captcha import (
 )
 from cookies import save_all_cookies, check_for_cf_clearance
 from logger import logger
+from sound import play_error_alert
 
 
 async def run_session_manager(attempt=1, max_attempts=3):
@@ -59,6 +60,7 @@ async def run_session_manager(attempt=1, max_attempts=3):
                 while not hasattr(new_tab, "turnstile_params"):
                     if time.time() - params_wait_start > 15:
                         logger.warning("Timeout waiting for Turnstile parameters")
+                        play_error_alert()  # Added sound for timeout error
                         break
                     await asyncio.sleep(0.5)
 
@@ -78,15 +80,20 @@ async def run_session_manager(attempt=1, max_attempts=3):
                             await asyncio.sleep(2)
                         else:
                             logger.error("Failed to submit captcha solution")
+                            play_error_alert()  # Added sound for submission failure
                     else:
                         logger.error("Failed to get captcha token from 2captcha")
+                        play_error_alert()  # Added sound for token acquisition failure
                 else:
                     logger.error("Failed to capture Turnstile parameters")
+                    play_error_alert()  # Added sound for parameter capture failure
             else:
                 logger.warning("No new tab detected for Cloudflare challenge")
+                play_error_alert()  # Added sound for new tab detection failure
 
         except Exception as e:
             logger.error(f"Error during purchase process: {e}")
+            play_error_alert()  # Added sound for general purchase process error
 
         # 3. Save cookies and close browser
         logger.info("Saving all cookies regardless of challenge completion status...")
@@ -115,6 +122,7 @@ async def run_session_manager(attempt=1, max_attempts=3):
             return True
         else:
             logger.warning("Failed to obtain cf_clearance cookie")
+            play_error_alert()  # Added sound for cookie acquisition failure
 
             if attempt < max_attempts:
                 retry_delay = random.randint(60, 120)
@@ -127,10 +135,12 @@ async def run_session_manager(attempt=1, max_attempts=3):
                 logger.error(
                     f"Failed to obtain cf_clearance cookie after {max_attempts} attempts"
                 )
+                play_error_alert()  # Added sound for max attempts reached
                 return False
 
     except Exception as e:
         logger.error(f"An error occurred: {e}")
+        play_error_alert()  # Added sound for general exception
         import traceback
 
         logger.error(traceback.format_exc())
@@ -169,12 +179,15 @@ async def main():
             logger.warning(
                 "Session manager reported success but cf_clearance cookie was not found"
             )
+            play_error_alert()  # Added sound for cookie validation failure
             return False
         else:
             logger.warning("Session manager failed to obtain cf_clearance cookie")
+            play_error_alert()  # Added sound for session manager failure
             return False
     except Exception as e:
         logger.error(f"Unhandled exception in main: {e}")
+        play_error_alert()  # Added sound for unhandled exception
         import traceback
 
         logger.error(traceback.format_exc())
@@ -188,6 +201,7 @@ if __name__ == "__main__":
         logger.info("Process interrupted by user")
     except Exception as e:
         logger.error(f"Fatal error: {e}")
+        play_error_alert()  # Added sound for fatal error
         import traceback
 
         logger.error(traceback.format_exc())
