@@ -78,63 +78,11 @@ NVIDIA_INJECT_SCRIPT = interceptor_js = """
 # Inject script to solve the Cloudflare turnstile challenge using 2captcha API
 PROSHOP_INJECT_SCRIPT = """
             console.log('[DEBUG] Script injection started');
-            
-            // Monitor for the turnstile script
-            const scriptObserver = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    mutation.addedNodes.forEach((node) => {
-                        if (node.tagName === 'SCRIPT' && node.src && node.src.includes('turnstile')) {
-                            console.log('[DEBUG] Turnstile script loading:', node.src);
-                            
-                            // Prepare to intercept the callback before script loads
-                            Object.defineProperty(window, 'RGHt6', {
-                                configurable: true,
-                                set: function(callback) {
-                                    console.log('[DEBUG] RGHt6 callback being set');
-                                    Object.defineProperty(window, 'RGHt6', {
-                                        value: function() {
-                                            console.log('[DEBUG] RGHt6 callback called');
-                                            if (window.turnstile && !window.turnstile._intercepted) {
-                                                console.log('[DEBUG] Intercepting turnstile in callback');
-                                                window.turnstile._intercepted = true;
-                                                const originalRender = window.turnstile.render;
-                                                window.turnstile.render = (a,b) => {
-                                                    let p = {
-                                                        type: "TurnstileTaskProxyless",
-                                                        websiteKey: b.sitekey,
-                                                        websiteURL: window.location.href,
-                                                        data: b.cData,
-                                                        pagedata: b.chlPageData,
-                                                        action: b.action,
-                                                        userAgent: navigator.userAgent
-                                                    }
-                                                    console.log("Turnstile parameters:", JSON.stringify(p, null, 2));
-                                                    window.tsCallback = b.callback;
-                                                    return 'foo';
-                                                }
-                                            }
-                                            return callback.apply(this, arguments);
-                                        },
-                                        configurable: true
-                                    });
-                                },
-                                get: function() {
-                                    return undefined;
-                                }
-                            });
-                        }
-                    });
-                });
-            });
-            
-            scriptObserver.observe(document.documentElement, {
-                childList: true,
-                subtree: true
-            });
-            
+           
             // Backup interval check
             const i = setInterval(()=>{
-              if (window.turnstile && !window.turnstile._intercepted) {
+              if (window.turnstile) {
+                console.log('[DEBUG] Dealing with turnstile');
                 clearInterval(i);
                 window.turnstile.render = (a,b) => {
                     let p = {
@@ -150,7 +98,6 @@ PROSHOP_INJECT_SCRIPT = """
                     window.tsCallback = b.callback;
                     return 'foo';
                 }
-                window.turnstile._intercepted = true;
               }
             },50);
             """
