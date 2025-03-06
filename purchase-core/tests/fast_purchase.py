@@ -2,7 +2,10 @@
 import json
 import time
 import requests
+import sys
 import os
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "cookie-prep"))
+from cookie_prep.config import PROSHOP_URL
 
 
 def fast_purchase(purchase_url):
@@ -171,7 +174,7 @@ def fast_purchase(purchase_url):
 
 if __name__ == "__main__":
     # Default test URL (same as in original code)
-    default_url = "https://www.proshop.de/Basket/BuyNvidiaGraphicCard?t=C8HgkfqkAbdVIyPnb%2B%2BHQOoYO6UhnuDDA8853HMVzu6Wh3v2YAtSuPC5hOcGnQqGZve77PQt9%2FdBgsLw327GJu35bgsktZFF01sZq2Ggu5VIedzHT6GMr%2BVdEl%2BqK6TJO6kIOoOFHkGPYbDnU8scv53inA8cgPvwQ4n8soRyD7EDfEYavWDPah8%2B%2BIPQye8LL8ymAba361B0pjcQgb1L2a4ap8SgOYum1voEi19FqaiPbcOn%2F1tmFZfTqw38ZrsV0wrokDAOcjaGLeiD5ujyc%2F9uY7GAJRGtEasilCzFJhECHYSimA9q8Pd9vJh%2FVhd9j%2BW3WlTmmTM4Pt3vimM2KQ%3D%3D"
+    default_url = PROSHOP_URL
 
     # Run the purchase function
     if fast_purchase(default_url):

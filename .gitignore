@@ -47,13 +47,4 @@ Thumbs.db
 logs/
 config.json
 secrets.json
-shared/scripts/captured_cookies.json
-shared/scripts/captured_purchase_cookies_go.json
-shared/scripts/captured_purchase_cookies_rs.json
-shared/scripts/captured_purchase_cookies.json
-shared/scripts/final_page_go.html
-shared/scripts/final_page_rs.html
-shared/scripts/final_page.html
-shared/scripts/redirect_history_go.json
-shared/scripts/redirect_history_rs.json
-shared/scripts/redirect_history.json
+shared/scripts/
