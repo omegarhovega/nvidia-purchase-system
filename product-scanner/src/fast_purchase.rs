@@ -93,18 +93,25 @@ fn fast_purchase(purchase_url: &str) -> Result<bool, Box<dyn Error>> {
 
     // Set browser fingerprinting headers - MUST match original
     request = request
-        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36")
-        .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-        .header("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7")
-        .header("Referer", "https://marketplace.nvidia.com/")
-        .header("Upgrade-Insecure-Requests", "1")
-        .header("sec-ch-ua", "\"Not(A:Brand\";v=\"99\", \"Brave\";v=\"133\", \"Chromium\";v=\"133\"")
+        .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8")
+        .header("Accept-Language", "de-DE,de;q=0.7")
+        .header("priority", "u=0, i")
+        .header("referer", "https://marketplace.nvidia.com/")
+        .header("sec-ch-ua", "\"Chromium\";v=\"134\", \"Not:A-Brand\";v=\"24\", \"Brave\";v=\"134\"")
+        .header("sec-ch-ua-arch", "\"x86\"")
+        .header("sec-ch-ua-bitness", "\"64\"")
+        .header("sec-ch-ua-full-version-list", "\"Chromium\";v=\"134.0.0.0\", \"Not:A-Brand\";v=\"24.0.0.0\", \"Brave\";v=\"134.0.0.0\"")
         .header("sec-ch-ua-mobile", "?0")
+        .header("sec-ch-ua-model", "\"\"")
         .header("sec-ch-ua-platform", "\"Windows\"")
+        .header("sec-ch-ua-platform-version", "\"19.0.0\"")
         .header("sec-fetch-dest", "document")
         .header("sec-fetch-mode", "navigate")
-        .header("sec-fetch-site", "same-origin")
-        .header("sec-gpc", "1");
+        .header("sec-fetch-site", "cross-site")
+        .header("sec-fetch-user", "?1")
+        .header("sec-gpc", "1")
+        .header("upgrade-insecure-requests", "1")
+        .header("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36");
 
     println!("[INFO] Making request to {}", purchase_url);
 

@@ -1,9 +1,9 @@
 {
-  "timestamp": "2025-03-09T16:39:39",
+  "timestamp": "2025-03-09T16:53:21",
   "final_url": "https://marketplace.nvidia.com/de-de/consumer/",
   "redirects": [
     {
-      "from": "https://www.proshop.de/Basket/BuyNvidiaGraphicCard?t=cGGPxfRYyEAQIZcnhxjJN%2FOLLxYo1AzRUQ5%2BCEZexiwFBOSjMwsnanN%2FXJ0oRu2reyKKP2C6CluQlS02NEzu%2F2ZEeqaN2Y3HjoPNaEwG%2BF1fDICdp7GktQpKQe1vxC%2BeMgNZxQF7g1wN3gsXDtXX1pBZH03W%2FC4UHDdyQJGLWD4sjITj4YS2QZfcjYV6oqk5Um4FIB7CBPgPwS4XndSYxrTwF8SPJ%2FnJoknsHS2Pt3mJTgsq171Yz8blP04AmETPm3g7HSDUwyuu7zqFmAG61iIzFkBoy%2BvIq1MrqUPcpBUZlFNbPD%2BtCsVuhLQc6kwQOlzYWoiBUQ%2FJUetzApYEMw%3D%3D",
+      "from": "https://www.proshop.de/Basket/BuyNvidiaGraphicCard?t=KKhHB%2BRgii8x9Whv7x6dUL2nbrrv74sLzqeEBwmYZdu03QDimI2NX4xjLmz9%2FU5L2gJesyGEfh8aeX3xmtrfgYzP5a5aQ9a3wuJLMcY0B9lUOkV6qYfjMYl2PKlF%2BgZJK3xp9hwW5JtISujKif7wilHdCCnfTltJ618tLL6Wa7g8XyjGCadvG2VSieua5s4ZLL59n9HNsSK%2FLPGWmv0lAd4LQw6yFLhEGqZV6JQalg9IBj8NORidB9cjPXkq9iHgQYqkID3vdDRhJ50tgy4LQb7%2Frh93x6wvOOhEUGLnMXgkEFMCUowdf3P4WYof1280JemQBZ%2FYuSexVfdCFgwplw%3D%3D",
       "to": "https://store.nvidia.com/de-de/geforce/store",
       "status_code": 302
     },
