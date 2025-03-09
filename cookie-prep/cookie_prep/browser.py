@@ -28,6 +28,8 @@ async def setup_browser():
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
                 # "--headless=new", (experimental and does not work)
+                "--disable-extensions",
+                "--disable-brave-extension",
             ],
             headless=False,
         )

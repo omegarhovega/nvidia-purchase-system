@@ -15,3 +15,12 @@ log = "0.4"
 simplelog = "0.12"
 ctrlc = "3.4"
 rodio = "0.17"
+attohttpc = "0.26"
+
+[[bin]]
+name = "product-scanner"
+path = "src/main.rs"
+
+[[bin]]
+name = "fast-purchase"
+path = "src/fast_purchase.rs"

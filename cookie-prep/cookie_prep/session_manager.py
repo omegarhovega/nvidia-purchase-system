@@ -21,7 +21,7 @@ from cookies import save_all_cookies, check_for_cf_clearance
 from logger import logger
 
 
-async def run_session_manager(attempt=1, max_attempts=3):
+async def run_session_manager(attempt=1, max_attempts=3, auto_close_browser=False):
     """
     Main function to handle Cloudflare challenge and capture cookies.
     Includes retry logic if cf_clearance cookie is not obtained.
@@ -29,6 +29,8 @@ async def run_session_manager(attempt=1, max_attempts=3):
     Args:
         attempt: Current attempt number
         max_attempts: Maximum number of attempts before giving up
+        auto_close_browser: If True, browser will be closed automatically after completing the task
+                           If False, browser will remain open until manually closed by the user
     """
     browser = None
 
@@ -88,23 +90,26 @@ async def run_session_manager(attempt=1, max_attempts=3):
         except Exception as e:
             logger.error(f"Error during purchase process: {e}")
 
-        # 3. Save cookies and close browser
+        # 3. Save cookies and close browser only if auto_close_browser is True
         logger.info("Saving all cookies regardless of challenge completion status...")
         await asyncio.sleep(5)
         await save_all_cookies(browser, tab)
 
-        logger.info("Closing browser...")
-        if browser:
-            try:
-                # Check if browser has the stop method before calling it
-                if hasattr(browser, "stop") and callable(getattr(browser, "stop")):
-                    await browser.stop()
-                else:
-                    logger.warning(
-                        "Browser object does not have a stop method or it's not callable"
-                    )
-            except Exception as e:
-                logger.error(f"Error closing browser: {e}")
+        if auto_close_browser:
+            logger.info("Closing browser...")
+            if browser:
+                try:
+                    # Check if browser has the stop method before calling it
+                    if hasattr(browser, "stop") and callable(getattr(browser, "stop")):
+                        await browser.stop()
+                    else:
+                        logger.warning(
+                            "Browser object does not have a stop method or it's not callable"
+                        )
+                except Exception as e:
+                    logger.error(f"Error closing browser: {e}")
+        else:
+            logger.info("Browser will remain open until manually closed by the user")
 
         # 4. Check for cf_clearance cookie in file
         # Wait a bit for file operations to complete
@@ -122,7 +127,7 @@ async def run_session_manager(attempt=1, max_attempts=3):
                     f"Retrying in {retry_delay} seconds (attempt {attempt + 1}/{max_attempts})..."
                 )
                 await asyncio.sleep(retry_delay)
-                return await run_session_manager(attempt + 1, max_attempts)
+                return await run_session_manager(attempt + 1, max_attempts, auto_close_browser)
             else:
                 logger.error(
                     f"Failed to obtain cf_clearance cookie after {max_attempts} attempts"
@@ -146,7 +151,7 @@ async def run_session_manager(attempt=1, max_attempts=3):
                     f"Retrying in {retry_delay} seconds (attempt {attempt + 1}/{max_attempts})..."
                 )
                 await asyncio.sleep(retry_delay)
-                return await run_session_manager(attempt + 1, max_attempts)
+                return await run_session_manager(attempt + 1, max_attempts, auto_close_browser)
             else:
                 logger.error(
                     f"Failed to obtain cf_clearance cookie after {max_attempts} attempts"
@@ -160,8 +165,8 @@ async def run_session_manager(attempt=1, max_attempts=3):
         logger.error(traceback.format_exc())
 
     finally:
-        # Always make sure browser is closed
-        if browser:
+        # Close browser only if auto_close_browser is True
+        if auto_close_browser and browser:
             try:
                 # Check if browser has the stop method before calling it
                 if hasattr(browser, "stop") and callable(getattr(browser, "stop")):
@@ -179,39 +184,44 @@ async def run_session_manager(attempt=1, max_attempts=3):
 async def main():
     """
     Main entry point that calls run_session_manager with retry logic.
+    Set auto_close_browser to False to keep the browser open until manually closed by the user.
     """
     try:
-        result = await run_session_manager(attempt=1, max_attempts=3)
+        result = await run_session_manager(attempt=1, max_attempts=3, auto_close_browser=False)
 
         # Double-check the result with check_for_cf_clearance function
         cf_cookie_exists = check_for_cf_clearance()
-
+        
         if result and cf_cookie_exists:
             logger.info("Session manager completed successfully")
-            return True
+            logger.info("Browser will remain open until manually closed by the user")
+            # Wait indefinitely to keep the process running while the browser is open
+            while True:
+                await asyncio.sleep(60)
         elif result and not cf_cookie_exists:
             logger.warning(
                 "Session manager reported success but cf_clearance cookie was not found"
             )
-            return False
+            logger.info("Browser will remain open until manually closed by the user")
+            # Wait indefinitely to keep the process running while the browser is open
+            while True:
+                await asyncio.sleep(60)
         else:
             logger.warning("Session manager failed to obtain cf_clearance cookie")
-            return False
+            logger.info("Browser will remain open until manually closed by the user")
+            # Wait indefinitely to keep the process running while the browser is open
+            while True:
+                await asyncio.sleep(60)
+    except KeyboardInterrupt:
+        logger.info("Process interrupted by user. Exiting...")
     except Exception as e:
-        logger.error(f"Unhandled exception in main: {e}")
+        logger.error(f"Error in main: {e}")
         import traceback
-
         logger.error(traceback.format_exc())
-        return False
 
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info("Process interrupted by user")
-    except Exception as e:
-        logger.error(f"Fatal error: {e}")
-        import traceback
-
-        logger.error(traceback.format_exc())
+        logger.info("Process terminated by user")
