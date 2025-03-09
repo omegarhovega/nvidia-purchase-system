@@ -138,7 +138,7 @@ func fastPurchase(purchaseURL string) (bool, error) {
 	// Add cookies to the request - pre-allocate the string builder
 	var allCookiesBuilder strings.Builder
 	allCookiesBuilder.Grow(1024) // Pre-allocate 1KB which should be enough for most cookie strings
-	
+
 	first := true
 	for _, cookie := range cookieData.Cookies {
 		if !first {
@@ -150,22 +150,29 @@ func fastPurchase(purchaseURL string) (bool, error) {
 		allCookiesBuilder.WriteString("=")
 		allCookiesBuilder.WriteString(cookie.Value)
 	}
-	
+
 	req.Header.Set("Cookie", allCookiesBuilder.String())
 
 	// Set browser fingerprinting headers - MUST match original
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36")
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7")
-	req.Header.Set("Referer", "https://marketplace.nvidia.com/")
-	req.Header.Set("Upgrade-Insecure-Requests", "1")
-	req.Header.Set("sec-ch-ua", "\"Not(A:Brand\";v=\"99\", \"Brave\";v=\"133\", \"Chromium\";v=\"133\"")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "de-DE,de;q=0.7")
+	req.Header.Set("priority", "u=0, i")
+	req.Header.Set("referer", "https://marketplace.nvidia.com/")
+	req.Header.Set("sec-ch-ua", "\"Chromium\";v=\"134\", \"Not:A-Brand\";v=\"24\", \"Brave\";v=\"134\"")
+	req.Header.Set("sec-ch-ua-arch", "\"x86\"")
+	req.Header.Set("sec-ch-ua-bitness", "\"64\"")
+	req.Header.Set("sec-ch-ua-full-version-list", "\"Chromium\";v=\"134.0.0.0\", \"Not:A-Brand\";v=\"24.0.0.0\", \"Brave\";v=\"134.0.0.0\"")
 	req.Header.Set("sec-ch-ua-mobile", "?0")
+	req.Header.Set("sec-ch-ua-model", "\"\"")
 	req.Header.Set("sec-ch-ua-platform", "\"Windows\"")
+	req.Header.Set("sec-ch-ua-platform-version", "\"19.0.0\"")
 	req.Header.Set("sec-fetch-dest", "document")
 	req.Header.Set("sec-fetch-mode", "navigate")
-	req.Header.Set("sec-fetch-site", "same-origin")
+	req.Header.Set("sec-fetch-site", "cross-site")
+	req.Header.Set("sec-fetch-user", "?1")
 	req.Header.Set("sec-gpc", "1")
+	req.Header.Set("upgrade-insecure-requests", "1")
+	req.Header.Set("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36")
 
 	fmt.Printf("[INFO] Making request to %s\n", purchaseURL)
 
@@ -202,7 +209,7 @@ func fastPurchase(purchaseURL string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to read response body: %w", err)
 	}
-	
+
 	responseBody := buf.Bytes()
 
 	// Save files in parallel using goroutines
