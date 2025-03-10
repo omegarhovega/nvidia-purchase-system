@@ -14,15 +14,23 @@ pub fn check_product_availability(product: &Value, default_link_5070: &str, defa
     let mut purchase_link = String::new();
     
     // Check if the product has retailers
-    if let Some(retailers) = product["retailers"].as_array() {
-        for retailer in retailers {
-            if let Some(link) = retailer["directPurchaseLink"].as_str() {
-                purchase_link = link.to_string();
-                // Check if the link is one of the default values
-                if link != default_link_5070 && link != default_link_5080 && link != default_link_5090 {
-                    return (display_name.to_string(), true, purchase_link);
-                }
-            }
+    let retailers = match product["retailers"].as_array() {
+        Some(retailers) => retailers,
+        None => return (display_name.to_string(), false, purchase_link)
+    };
+    
+    // Check each retailer for a direct purchase link
+    for retailer in retailers {
+        let link = match retailer["directPurchaseLink"].as_str() {
+            Some(link) => link,
+            None => continue
+        };
+        
+        purchase_link = link.to_string();
+        
+        // If the link is not one of the default values, the product is available
+        if link != default_link_5070 && link != default_link_5080 && link != default_link_5090 {
+            return (display_name.to_string(), true, purchase_link);
         }
     }
     
@@ -118,134 +126,161 @@ pub async fn check_nvidia_api(
         let response_result = request.send().await;
         let response_time = request_start.elapsed().as_millis();
             
-        match response_result {
-            Ok(response) => {
-                let status = response.status();
-                info!("Cycle #{} - Response status: {}, Time: {}ms", cycle, status, response_time);
-                
-                // Check if successful
-                if status.is_success() {
-                    // Get response bytes
-                    match response.bytes().await {
-                        Ok(bytes) => {
-                            let response_length = bytes.len();
-                            info!("Cycle #{} - Successfully received response with length: {} bytes", cycle, response_length);
-                            
-                            // Parse as JSON
-                            match serde_json::from_slice::<serde_json::Value>(&bytes) {
-                                Ok(json) => {
-                                    let mut product_statuses = Vec::new();
-                                    
-                                    if let Some(searched_products) = json["searchedProducts"].as_object() {
-                                        if let Some(product_details) = searched_products.get("productDetails") {
-                                            if let Some(products) = product_details.as_array() {
-                                                if products.is_empty() {
-                                                    let msg = "No products found in the API response.";
-                                                    warn!("Cycle #{} - {}", cycle, msg);
-                                                    println!("[{}] Cycle #{} - {}", 
-                                                             Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
-                                                } else {
-                                                    for product in products {
-                                                        let (name, available, link) = check_product_availability(
-                                                            product, 
-                                                            &config.default_links.rtx_5070,
-                                                            &config.default_links.rtx_5080,
-                                                            &config.default_links.rtx_5090
-                                                        );
-                                                        let status = if available { "AVAILABLE" } else { "NOT AVAILABLE" };
-                                                        
-                                                        // If product is available and should be purchased, launch purchase process
-                                                        if available && should_attempt_purchase(&name, purchase_config) {
-                                                            info!("Cycle #{} - Product '{}' is available, launching purchase process", cycle, name);
-                                                            println!("[{}] Cycle #{} - Product '{}' is available, launching purchase process", 
-                                                                     Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, name);
-                                                            
-                                                            // Launch the purchase process
-                                                            if let Err(e) = launch_purchase(&name, &link).await {
-                                                                error!("Cycle #{} - Failed to launch purchase for '{}': {}", cycle, name, e);
-                                                                println!("[{}] Cycle #{} - ❌ Failed to launch purchase for '{}': {}", 
-                                                                         Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, name, e);
-                                                            }
-                                                        }
-                                                        
-                                                        product_statuses.push((name, status.to_string()));
-                                                    }
-                                                }
-                                            } else {
-                                                let msg = "productDetails is not an array";
-                                                warn!("Cycle #{} - {}", cycle, msg);
-                                                println!("[{}] Cycle #{} - {}", 
-                                                         Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
-                                            }
-                                        } else {
-                                            let msg = "productDetails not found in the response";
-                                            warn!("Cycle #{} - {}", cycle, msg);
-                                            println!("[{}] Cycle #{} - {}", 
-                                                     Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
-                                        }
-                                    } else {
-                                        let msg = "searchedProducts not found in the response";
-                                        warn!("Cycle #{} - {}", cycle, msg);
-                                        println!("[{}] Cycle #{} - {}", 
-                                                 Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
-                                    }
-                                    
-                                    // Print and log the results
-                                    let total_time = start_time.elapsed().as_millis();
-                                    let status_summary: Vec<String> = product_statuses
-                                        .iter()
-                                        .map(|(name, status)| format!("{}: {}", name, status))
-                                        .collect();
-                                    
-                                    let summary = format!(
-                                        "[{}] Cycle #{} - Status: SUCCESS ({}), Products: [{}], Response Length: {} bytes, Response Time: {}ms, Total Time: {}ms",
-                                        Local::now().format("%Y-%m-%d %H:%M:%S"),
-                                        cycle,
-                                        status,
-                                        status_summary.join(", "),
-                                        response_length,
-                                        response_time,
-                                        total_time
-                                    );
-                                    
-                                    println!("{}", summary);
-                                    info!("{}", summary);
-                                    
-                                    return Ok(());
-                                },
-                                Err(e) => {
-                                    let msg = format!("Couldn't parse response as JSON: {}", e);
-                                    error!("Cycle #{} - {}", cycle, msg);
-                                    println!("[{}] Cycle #{} - {}", 
-                                             Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
-                                    last_error = Some(msg);
-                                }
-                            }
-                        },
-                        Err(e) => {
-                            let msg = format!("Error reading response body: {}", e);
-                            error!("Cycle #{} - {}", cycle, msg);
-                            println!("[{}] Cycle #{} - {}", 
-                                     Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
-                            last_error = Some(msg);
-                        }
-                    }
-                } else {
-                    let msg = format!("HTTP error status: {} ({})", status, status.canonical_reason().unwrap_or("Unknown"));
-                    error!("Cycle #{} - {}", cycle, msg);
-                    println!("[{}] Cycle #{} - {}", 
-                             Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
-                    last_error = Some(msg);
-                }
-            },
+        // Handle request errors
+        let response = match response_result {
+            Ok(response) => response,
             Err(e) => {
                 let msg = format!("Request error: {}", e);
                 error!("Cycle #{} - {}", cycle, msg);
                 println!("[{}] Cycle #{} - {}", 
-                         Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
+                        Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
                 last_error = Some(msg);
+                continue;
             }
+        };
+        
+        let status = response.status();
+        info!("Cycle #{} - Response status: {}, Time: {}ms", cycle, status, response_time);
+        
+        // Check if response is successful
+        if !status.is_success() {
+            let msg = format!("HTTP error status: {} ({})", status, status.canonical_reason().unwrap_or("Unknown"));
+            error!("Cycle #{} - {}", cycle, msg);
+            println!("[{}] Cycle #{} - {}", 
+                    Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
+            last_error = Some(msg);
+            continue;
         }
+        
+        // Get response bytes
+        let bytes = match response.bytes().await {
+            Ok(bytes) => bytes,
+            Err(e) => {
+                let msg = format!("Error reading response body: {}", e);
+                error!("Cycle #{} - {}", cycle, msg);
+                println!("[{}] Cycle #{} - {}", 
+                        Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
+                last_error = Some(msg);
+                continue;
+            }
+        };
+        
+        let response_length = bytes.len();
+        info!("Cycle #{} - Successfully received response with length: {} bytes", cycle, response_length);
+        
+        // Parse JSON
+        let json = match serde_json::from_slice::<serde_json::Value>(&bytes) {
+            Ok(json) => json,
+            Err(e) => {
+                let msg = format!("Couldn't parse response as JSON: {}", e);
+                error!("Cycle #{} - {}", cycle, msg);
+                println!("[{}] Cycle #{} - {}", 
+                        Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
+                last_error = Some(msg);
+                continue;
+            }
+        };
+        
+        let mut product_statuses = Vec::new();
+        
+        // Extract searched products
+        let searched_products = match json["searchedProducts"].as_object() {
+            Some(searched_products) => searched_products,
+            None => {
+                let msg = "searchedProducts not found in the response";
+                warn!("Cycle #{} - {}", cycle, msg);
+                println!("[{}] Cycle #{} - {}", 
+                        Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
+                last_error = Some(msg.to_string());
+                continue;
+            }
+        };
+        
+        // Extract product details
+        let product_details = match searched_products.get("productDetails") {
+            Some(product_details) => product_details,
+            None => {
+                let msg = "productDetails not found in the response";
+                warn!("Cycle #{} - {}", cycle, msg);
+                println!("[{}] Cycle #{} - {}", 
+                        Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
+                last_error = Some(msg.to_string());
+                continue;
+            }
+        };
+        
+        // Extract products array
+        let products = match product_details.as_array() {
+            Some(products) => products,
+            None => {
+                let msg = "productDetails is not an array";
+                warn!("Cycle #{} - {}", cycle, msg);
+                println!("[{}] Cycle #{} - {}", 
+                        Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
+                last_error = Some(msg.to_string());
+                continue;
+            }
+        };
+        
+        // Check if products array is empty
+        if products.is_empty() {
+            let msg = "No products found in the API response.";
+            warn!("Cycle #{} - {}", cycle, msg);
+            println!("[{}] Cycle #{} - {}", 
+                    Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, msg);
+            last_error = Some(msg.to_string());
+            continue;
+        }
+        
+        // Process each product
+        for product in products {
+            let (name, available, link) = check_product_availability(
+                product, 
+                &config.default_links.rtx_5070,
+                &config.default_links.rtx_5080,
+                &config.default_links.rtx_5090
+            );
+            let status = if available { "AVAILABLE" } else { "NOT AVAILABLE" };
+            
+            // If product is available and should be purchased, launch purchase process
+            if available && should_attempt_purchase(&name, purchase_config) {
+                info!("Cycle #{} - Product '{}' is available, launching purchase process", cycle, name);
+                println!("[{}] Cycle #{} - Product '{}' is available, launching purchase process", 
+                        Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, name);
+                
+                // Launch the purchase process
+                if let Err(e) = launch_purchase(&name, &link).await {
+                    error!("Cycle #{} - Failed to launch purchase for '{}': {}", cycle, name, e);
+                    println!("[{}] Cycle #{} - ❌ Failed to launch purchase for '{}': {}", 
+                            Local::now().format("%Y-%m-%d %H:%M:%S"), cycle, name, e);
+                }
+            }
+            
+            product_statuses.push((name, status.to_string()));
+        }
+        
+        // Print and log the results
+        let total_time = start_time.elapsed().as_millis();
+        let status_summary: Vec<String> = product_statuses
+            .iter()
+            .map(|(name, status)| format!("{}: {}", name, status))
+            .collect();
+        
+        let summary = format!(
+            "[{}] Cycle #{} - Status: SUCCESS ({}), Products: [{}], Response Length: {} bytes, Response Time: {}ms, Total Time: {}ms",
+            Local::now().format("%Y-%m-%d %H:%M:%S"),
+            cycle,
+            status,
+            status_summary.join(", "),
+            response_length,
+            response_time,
+            total_time
+        );
+        
+        println!("{}", summary);
+        info!("{}", summary);
+        
+        return Ok(());
     }
     
     // If we get here, all attempts failed
