@@ -6,23 +6,18 @@ An automated system for monitoring and purchasing NVIDIA GPUs when they become a
 
 This project is organized into four main components:
 
-1. **purchase-core** (Python): Core purchasing functionality
-   - HTTP client handling
-   - Cookie management
-   - Purchase automation
-
-2. **product-scanner** (Rust): Product availability monitoring
-   - API monitoring
+1. **product-scanner** (Rust): Product availability monitoring and automated purchase logic
+   - nvidia API monitoring
    - Product tracking
    - Availability notifications
-   - Automatic purchase initiation
+   - Automatic purchase function
 
-3. **cookie-prep** (Python): Cookie and session management
-   - Use script to inject to nvidia shop homepage and show button using old purchase link
+2. **cookie-prep** (Python): Cookie and session management
+   - Use script to inject to nvidia shop homepage and show buy button using old proshop purchase link
    - Follow old purchase link Using 2Captcha to solve Cloudflare challenge
-   - Obtain and save cf_clearance cookie
+   - Periodically obtain and save cf_clearance cookie to allow direct purchase once product is available
 
-4. **nvidia_purchase_coordinator.py** (Python): Top-level coordination
+3. **nvidia_purchase_coordinator.py** (Python): Top-level coordination
    - Orchestrates all system components
    - Manages cookie refreshes on a schedule
    - Starts and monitors product scanner
@@ -35,6 +30,8 @@ This project is organized into four main components:
 - Rust (stable channel)
 - Python 3.8+
 - Required dependencies (see component-specific READMEs)
+- 2Captcha API key
+- Brave, Chrome or other Chromium based browser
 
 ### Installation
 
@@ -58,35 +55,11 @@ The system is configured using TOML files:
 
 ### Product Scanner Configuration
 
-Located at `product-scanner/config/default.toml`:
+Located at `product-scanner/config/default.toml`
 
-```toml
-# API URL for NVIDIA product search
-url = "https://api.nvidia.partners/edge/product/search?page=1&limit=9&manufacturer_filter=NVIDIA%7E1&category=GPU&locale=de-de&manufacturer=NVIDIA"
-
-# Request settings
-[request]
-timeout_secs = 30
-connect_timeout_secs = 15
-max_attempts = 4
-sleep_ms_min = 500
-sleep_ms_max = 1000
-
-# Default purchase links (when these change, the product is available)
-[default_links]
-rtx_5070 = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-geforce-rtx-5070/"
-rtx_5080 = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-geforce-rtx-5080/"
-rtx_5090 = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-geforce-rtx-5090/"
-
-# Purchase settings
-[purchase]
-enabled = true
-product_names = [
-    "GeForce RTX 5070",
-    "GeForce RTX 5080",
-    "GeForce RTX 5090"
-]
-```
+The purchase configuration controls:
+- Whether automatic purchasing is enabled (`enabled = true/false`)
+- Which product names should trigger a purchase attempt (`product_names` array)
 
 ## Usage
 
@@ -103,7 +76,8 @@ This will:
 1. Run the session manager to get fresh cookies
 2. Start the product scanner to monitor for available products
 3. Periodically refresh cookies (every 12-15 minutes)
-4. Handle errors and restart components as needed
+4. Launch the purchase process when a product becomes available
+5. Handle errors and restart components as needed
 
 ### Running Components Individually
 
@@ -113,16 +87,11 @@ This will:
 # Run the product scanner in normal mode
 cd product-scanner
 cargo run
-
-# Run the product scanner in test mode (simulates product availability)
-cargo run --bin product-scanner --  --test
-cargo run -- --test-error
 ```
 
 The product scanner will:
 1. Monitor the NVIDIA API for product availability
 2. When a product becomes available, it will automatically initiate the purchase process
-3. Log all activities to both the console and a log file (`nvidia_product_checker.log`)
 
 #### Running Cookie Preparation Manually
 
@@ -132,46 +101,27 @@ cd cookie-prep
 python -c "import asyncio; from cookie_prep.session_manager import main; asyncio.run(main())"
 ```
 
-#### Testing the Purchase Method
-
-```bash
-# From the purchase-core/src directory
-cd purchase-core/src
-python purchase_method.py [purchase_url]
-```
-
 ### Test Mode
 
-The test mode simulates product availability without making actual API calls. This is useful for testing the purchase functionality without waiting for products to become available.
+The product scanner includes a robust test mode that can be activated with the `--test` command-line argument:
+
+```bash
+# Run the product scanner in test mode
+cd product-scanner
+cargo run --bin product-scanner --  --test
+```
 
 When running in test mode, the scanner will:
 1. Simulate availability for configured products
-2. Test the purchase initiation process
-3. Exit after completing the tests
+2. Test the purchase initiation process by calling the purchase mechanism
+3. Verify that the product list in configuration is correctly processed
+4. Test that purchases are only attempted for configured products
+5. Exit after completing the tests
 
-### Testing Purchase Integration
-
-To test the complete purchase flow without waiting for actual product availability:
-
-```bash
-# From the product-scanner directory
-cd product-scanner
-cargo run -- --test
-```
-
-This will:
-1. Load your configuration from default.toml
-2. Simulate an available product (e.g., "GeForce RTX 5080")
-3. Trigger the purchase flow by calling purchase_method.py with the product URL
-4. Log the results of the test
-
-This test verifies that:
-- The product scanner correctly identifies configured products
-- The launch_purchase module properly executes the purchase script
-- The purchase_method.py script is called with the correct parameters
-- The entire purchase flow works end-to-end
-
-You can modify which products are tested by changing the `product_names` list in the `[purchase]` section of your configuration file.
+This test mode is useful for:
+- Verifying that your purchase configuration is correct
+- Testing the complete purchase flow without waiting for actual product availability
+- Confirming that the integration between components works as expected
 
 ### Stopping the System
 
@@ -198,8 +148,22 @@ The system operates as a pipeline:
 The product scanner consists of three main modules:
 
 1. **main.rs**: Application setup, configuration loading, and main loop
+   - Handles command-line arguments including test mode
+   - Loads configuration from default.toml
+   - Sets up logging and error handling
+   - Manages the main monitoring loop
+
 2. **product_checker.rs**: API interaction and product availability checking
+   - Makes HTTP requests to the NVIDIA API
+   - Parses API responses to check product availability
+   - Returns product links when products are available
+   - Includes test functionality to simulate available products
+
 3. **launch_purchase.rs**: Purchase initiation when products are available
+   - Controls purchase behavior through the PurchaseConfig struct
+   - Determines which products should trigger purchase attempts
+   - Launches the purchase process by calling the Python purchase script
+   - Provides logging and error handling for purchase attempts
 
 ### Purchase Core
 
@@ -236,6 +200,22 @@ The coordinator (nvidia_purchase_coordinator.py) orchestrates the entire system:
 3. Handles shutdown:
    - Gracefully stops all components
    - Ensures clean process termination
+
+## Project Status
+
+As of March 10, 2025, the project has successfully implemented:
+
+1. Comprehensive product scanning functionality
+2. Automatic purchase initiation when products are available
+3. Integration between the product scanner and purchase components
+4. Cookie management and Cloudflare bypass
+5. Full test suite for verifying functionality
+
+The system is capable of:
+- Monitoring NVIDIA API for product availability
+- Automatically initiating purchases when configured products are available
+- Successfully maintaining authenticated sessions with Cloudflare protection
+- Performing end-to-end testing of the purchase flow
 
 ## Development
 
