@@ -46,7 +46,7 @@ fn get_timestamp() -> String {
     now.format("%Y-%m-%dT%H:%M:%S").to_string()
 }
 
-fn fast_purchase(purchase_url: &str) -> Result<bool, Box<dyn Error>> {
+pub fn fast_purchase(purchase_url: &str) -> Result<bool, Box<dyn Error>> {
     // Start timing
     let start_time = Instant::now();
 
@@ -91,7 +91,7 @@ fn fast_purchase(purchase_url: &str) -> Result<bool, Box<dyn Error>> {
     // Add the combined cookie header
     request = request.header("Cookie", all_cookies);
 
-    // Set browser fingerprinting headers - MUST match original
+    // Set browser fingerprinting headers - MUST match original request to obtain cf_clearance cookie
     request = request
         .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8")
         .header("Accept-Language", "de-DE,de;q=0.7")
@@ -221,8 +221,10 @@ fn fast_purchase(purchase_url: &str) -> Result<bool, Box<dyn Error>> {
     Ok(status.is_success())
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-    // Default test URL (same as in original code)
+// For testing purposes only to run script standalone
+#[allow(dead_code)]
+pub fn main() -> Result<(), Box<dyn Error>> {
+    // Default test URL
     let default_url = "https://www.proshop.de/Basket/BuyNvidiaGraphicCard?t=C8HgkfqkAbdVIyPnb%2B%2BHQOoYO6UhnuDDA8853HMVzu6Wh3v2YAtSuPC5hOcGnQqGZve77PQt9%2FdBgsLw327GJu35bgsktZFF01sZq2Ggu5VIedzHT6GMr%2BVdEl%2BqK6TJO6kIOoOFHkGPYbDnU8scv53inA8cgPvwQ4n8soRyD7EDfEYavWDPah8%2B%2BIPQye8LL8ymAba361B0pjcQgb1L2a4ap8SgOYum1voEi19FqaiPbcOn%2F1tmFZfTqw38ZrsV0wrokDAOcjaGLeiD5ujyc%2F9uY7GAJRGtEasilCzFJhECHYSimA9q8Pd9vJh%2FVhd9j%2BW3WlTmmTM4Pt3vimM2KQ%3D%3D";
 
     // Run the purchase function

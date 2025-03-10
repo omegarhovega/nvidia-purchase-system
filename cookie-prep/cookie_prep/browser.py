@@ -10,7 +10,7 @@ from config import (
 )
 from logger import logger
 
-# Load environment variables from .env file
+# Load environment variables from .env file with 2Captcha API key
 load_dotenv()
 
 
@@ -27,7 +27,7 @@ async def setup_browser():
                 "--lang=de-DE",
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
-                # "--headless=new", (experimental and does not work)
+                # "--headless=new", (experimental, does not work in this context)
                 "--disable-extensions",
                 "--disable-brave-extension",
             ],

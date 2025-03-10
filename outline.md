@@ -4,6 +4,8 @@
 - Simplify files
 - Did not seem to handle case where cookie-getter fails with 403 page gracefully (nvidia_purchase_coordinator seemed stuck?)
 
+Also monitor: https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=Pro5090FE&locale=DE
+
 # Test
 Ran it without vpn and much faster (3.5 vs 10.2 sec)?
 

@@ -51,18 +51,25 @@ def fast_purchase(purchase_url):
 
     # Set browser fingerprinting headers - MUST match original
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Referer": "https://marketplace.nvidia.com/",
-        "Upgrade-Insecure-Requests": "1",
-        "sec-ch-ua": '"Not(A:Brand";v="99", "Brave";v="133", "Chromium";v="133"',
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "de-DE,de;q=0.7",
+        "priority": "u=0, i",
+        "referer": "https://marketplace.nvidia.com/",
+        "sec-ch-ua": '"Chromium";v="134", "Not:A-Brand";v="24", "Brave";v="134"',
+        "sec-ch-ua-arch": '"x86"',
+        "sec-ch-ua-bitness": '"64"',
+        "sec-ch-ua-full-version-list": '"Chromium";v="134.0.0.0", "Not:A-Brand";v="24.0.0.0", "Brave";v="134.0.0.0"',
         "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-model": '""',
         "sec-ch-ua-platform": '"Windows"',
+        "sec-ch-ua-platform-version": '"19.0.0"',
         "sec-fetch-dest": "document",
         "sec-fetch-mode": "navigate",
-        "sec-fetch-site": "same-origin",
+        "sec-fetch-site": "cross-site",
+        "sec-fetch-user": "?1",
         "sec-gpc": "1",
+        "upgrade-insecure-requests": "1",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
     }
 
     print(f"[INFO] Making request to {purchase_url}")

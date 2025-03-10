@@ -22,5 +22,5 @@ name = "product-scanner"
 path = "src/main.rs"
 
 [[bin]]
-name = "fast-purchase"
-path = "src/fast_purchase.rs"
+name = "execute-purchase"
+path = "src/execute_purchase.rs"

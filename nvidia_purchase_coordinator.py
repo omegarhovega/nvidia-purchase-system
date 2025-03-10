@@ -59,7 +59,7 @@ def run_session_manager():
         cmd = [
             sys.executable,
             "-c",
-            "import sys; sys.path.append('.'); import asyncio; from session_manager import main; asyncio.run(main())"
+            "import sys; sys.path.append('.'); import asyncio; from main import main; asyncio.run(main())"
         ]
         
         # Run the process and capture output
@@ -113,9 +113,10 @@ def start_product_scanner():
     print(f"[{format_timestamp()}] Starting product scanner...")
     
     try:
-        # Navigate to product-scanner directory and run cargo run
+        # Navigate to product-scanner directory and run cargo run with specific binary
+        # The binary name must match exactly what's in Cargo.toml: "product-scanner" (with hyphen)
         scanner_process = subprocess.Popen(
-            ["cargo", "run"],
+            ["cargo", "run", "--bin", "product-scanner"],  # Explicitly specify the binary name
             cwd=PRODUCT_SCANNER_DIR,
             # Don't capture output so it's displayed in real-time
             stdout=subprocess.PIPE,

@@ -30,7 +30,7 @@ async def run_session_manager(attempt=1, max_attempts=3, auto_close_browser=Fals
         attempt: Current attempt number
         max_attempts: Maximum number of attempts before giving up
         auto_close_browser: If True, browser will be closed automatically after completing the task
-                           If False, browser will remain open until manually closed by the user
+                            If False, browser will remain open until manually closed by the user
     """
     browser = None
 
@@ -53,6 +53,7 @@ async def run_session_manager(attempt=1, max_attempts=3, auto_close_browser=Fals
             await asyncio.sleep(3)
 
             if len(browser.tabs) >= 2:
+                # Select the new tab opening after clicking buy button
                 new_tab = browser.tabs[1]
                 logger.info("Starting Cloudflare challenge solution")
 
@@ -140,22 +141,9 @@ async def run_session_manager(attempt=1, max_attempts=3, auto_close_browser=Fals
                 except Exception as e:
                     logger.error(f"Failed to play error sound: {e}")
 
-                logger.info("Keeping the window open for 15 seconds...")
-                await asyncio.sleep(15)
-                return False
-            logger.warning("Failed to obtain cf_clearance cookie")
-
-            if attempt < max_attempts:
-                retry_delay = random.randint(60, 120)
-                logger.info(
-                    f"Retrying in {retry_delay} seconds (attempt {attempt + 1}/{max_attempts})..."
-                )
-                await asyncio.sleep(retry_delay)
-                return await run_session_manager(attempt + 1, max_attempts, auto_close_browser)
-            else:
-                logger.error(
-                    f"Failed to obtain cf_clearance cookie after {max_attempts} attempts"
-                )
+                logger.info("Browser will be closed automatically...")
+                # logger.info("Keeping the window open for 15 seconds...")
+                # await asyncio.sleep(15)
                 return False
 
     except Exception as e:
@@ -179,49 +167,3 @@ async def run_session_manager(attempt=1, max_attempts=3, auto_close_browser=Fals
                 logger.error(f"Error closing browser: {e}")
 
     return False
-
-
-async def main():
-    """
-    Main entry point that calls run_session_manager with retry logic.
-    Set auto_close_browser to False to keep the browser open until manually closed by the user.
-    """
-    try:
-        result = await run_session_manager(attempt=1, max_attempts=3, auto_close_browser=False)
-
-        # Double-check the result with check_for_cf_clearance function
-        cf_cookie_exists = check_for_cf_clearance()
-        
-        if result and cf_cookie_exists:
-            logger.info("Session manager completed successfully")
-            logger.info("Browser will remain open until manually closed by the user")
-            # Wait indefinitely to keep the process running while the browser is open
-            while True:
-                await asyncio.sleep(60)
-        elif result and not cf_cookie_exists:
-            logger.warning(
-                "Session manager reported success but cf_clearance cookie was not found"
-            )
-            logger.info("Browser will remain open until manually closed by the user")
-            # Wait indefinitely to keep the process running while the browser is open
-            while True:
-                await asyncio.sleep(60)
-        else:
-            logger.warning("Session manager failed to obtain cf_clearance cookie")
-            logger.info("Browser will remain open until manually closed by the user")
-            # Wait indefinitely to keep the process running while the browser is open
-            while True:
-                await asyncio.sleep(60)
-    except KeyboardInterrupt:
-        logger.info("Process interrupted by user. Exiting...")
-    except Exception as e:
-        logger.error(f"Error in main: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
-
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        logger.info("Process terminated by user")

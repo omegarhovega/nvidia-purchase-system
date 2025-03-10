@@ -1,8 +1,8 @@
 use log::info;
 use chrono::Local;
 use std::error::Error;
-use std::process::Command;
 use crate::sound::play_error_alert;
+use crate::execute_purchase;
 
 /// Configuration for the purchase launcher
 pub struct PurchaseConfig {
@@ -12,7 +12,7 @@ pub struct PurchaseConfig {
 
 /// Launches the purchase process for a specific product
 /// 
-/// This integrates with the purchase-core component by calling the Python purchase_method.py script
+/// This integrates with the execute_purchase module directly
 pub async fn launch_purchase(product_name: &str, product_link: &str) -> Result<(), Box<dyn Error>> {
     let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
     
@@ -21,38 +21,30 @@ pub async fn launch_purchase(product_name: &str, product_link: &str) -> Result<(
     println!("[{}] 🚀 LAUNCHING PURCHASE PROCESS FOR: {}", timestamp, product_name);
     println!("[{}] 🔗 Product Link: {}", timestamp, product_link);
     
-    // Call the Python purchase_method.py script with the product link
-    println!("[{}] ⏳ Starting purchase process with purchase_method.py", timestamp);
+    // Call the execute_purchase module with the product link
+    println!("[{}] ⏳ Starting purchase process with execute_purchase", timestamp);
     
-    // Find the absolute path to the Python script
-    let purchase_script_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Failed to get parent directory")?
-        .join("purchase-core")
-        .join("src")
-        .join("purchase_method.py");
+    info!("Running fast_purchase function with link: {}", product_link);
     
-    info!("Running Python script: {:?}", purchase_script_path);
-    
-    // Execute the Python script with the product link as an argument
-    let output = Command::new("python")
-        .arg(&purchase_script_path)
-        .arg(product_link)  // Pass the product link as a command-line argument
-        .output()?;
-    
-    // Log the output
-    if output.status.success() {
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        info!("Purchase script executed successfully: {}", stdout);
-        println!("[{}] ✅ Purchase process completed successfully", timestamp);
-        println!("[{}] Output: {}", timestamp, stdout);
-    } else {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        info!("Purchase script failed: {}", stderr);
-        println!("[{}] ❌ Purchase process failed", timestamp);
-        println!("[{}] Error: {}", timestamp, stderr);
-        play_error_alert();
-        return Err(format!("Purchase script failed: {}", stderr).into());
+    // Execute the purchase function with the product link
+    match execute_purchase::fast_purchase(product_link) {
+        Ok(true) => {
+            info!("Purchase executed successfully");
+            println!("[{}] ✅ Purchase process completed successfully", timestamp);
+        },
+        Ok(false) => {
+            info!("Purchase process failed");
+            println!("[{}] ❌ Purchase process failed", timestamp);
+            play_error_alert();
+            return Err("Purchase process failed".into());
+        },
+        Err(e) => {
+            info!("Purchase process error: {}", e);
+            println!("[{}] ❌ Purchase process failed with error", timestamp);
+            println!("[{}] Error: {}", timestamp, e);
+            play_error_alert();
+            return Err(e);
+        }
     }
     
     Ok(())
