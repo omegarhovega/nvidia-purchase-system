@@ -89,7 +89,6 @@ pub async fn check_nvidia_api(
     let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
     
     info!("Cycle #{} - Starting API check at {}", cycle, timestamp);
-    println!("\n[{}] Cycle #{} - Checking NVIDIA API...", timestamp, cycle);
     
     // Maximum number of attempts
     let max_attempts = config.request.max_attempts;
@@ -267,7 +266,7 @@ pub async fn check_nvidia_api(
             .collect();
         
         let summary = format!(
-            "[{}] Cycle #{} - Status: SUCCESS ({}), Products: [{}], Response Length: {} bytes, Response Time: {}ms, Total Time: {}ms",
+            "[{}] Checking NVIDIA API - Cycle #{} - Status: SUCCESS ({}), Products: [{}], Response Length: {} bytes, Response Time: {}ms, Total Time: {}ms",
             Local::now().format("%Y-%m-%d %H:%M:%S"),
             cycle,
             status,
