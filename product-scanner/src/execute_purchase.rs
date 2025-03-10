@@ -35,9 +35,7 @@ fn get_shared_scripts_path() -> std::path::PathBuf {
     let current_dir = std::env::current_dir().expect("Failed to get current directory");
     let root_dir = current_dir
         .parent()
-        .expect("Failed to get parent directory")
-        .parent()
-        .expect("Failed to get parent of parent directory");
+        .expect("Failed to get parent directory");
     root_dir.join("shared").join("scripts")
 }
 
