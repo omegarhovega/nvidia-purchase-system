@@ -4,9 +4,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use rand::Rng;
 use chrono::Local;
-use log::{info, error, LevelFilter};
-use simplelog::{CombinedLogger, Config, TermLogger, WriteLogger, TerminalMode, ColorChoice};
-use std::fs::File;
+use log::{info, error};
 use reqwest;
 use config::Config as AppConfig;
 use tokio;
@@ -25,13 +23,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
     let test_mode = args.len() > 1 && (args[1] == "--test" || args[1] == "--test-error");
     let test_error_mode = args.len() > 1 && args[1] == "--test-error";
-    
-    // Set up logging
-    let log_file = File::create("nvidia_product_checker.log")?;
-    CombinedLogger::init(vec![
-        TermLogger::new(LevelFilter::Info, Config::default(), TerminalMode::Mixed, ColorChoice::Auto),
-        WriteLogger::new(LevelFilter::Info, Config::default(), log_file),
-    ])?;
     
     // Load configuration
     let settings = AppConfig::builder()
