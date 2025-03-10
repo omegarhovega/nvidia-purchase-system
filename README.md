@@ -115,7 +115,7 @@ cd product-scanner
 cargo run
 
 # Run the product scanner in test mode (simulates product availability)
-cargo run -- --test
+cargo run --bin product-scanner --  --test
 cargo run -- --test-error
 ```
 
