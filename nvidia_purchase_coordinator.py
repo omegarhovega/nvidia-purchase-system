@@ -30,7 +30,7 @@ logger = logging.getLogger("coordinator")
 
 # Paths to main components
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-COOKIE_PREP_DIR = os.path.join(BASE_DIR, "cookie-prep", "cookie_prep")
+COOKIE_PREP_DIR = os.path.join(BASE_DIR, "cookie-prep", "src")
 PRODUCT_SCANNER_DIR = os.path.join(BASE_DIR, "product-scanner")
 COOKIE_OUTPUT_PATH = os.path.join(BASE_DIR, "shared", "scripts", "captured_cookies.json")
 
