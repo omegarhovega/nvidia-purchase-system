@@ -3,9 +3,9 @@
 NVIDIA Purchase Coordinator
 
 This script coordinates all components of the NVIDIA purchase system:
-1. Runs the cookie-prep session manager to get fresh cookies
+1. Runs the cookie-prep session manager to get fresh cf_clearancecookies
 2. Periodically refreshes cookies (every 12-15 minutes)
-3. Starts and monitors the product-scanner
+3. Starts the product-scanner/purchase logic
 """
 import os
 import random
