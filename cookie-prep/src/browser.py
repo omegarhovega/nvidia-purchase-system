@@ -27,7 +27,7 @@ async def setup_browser():
                 "--lang=de-DE",
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
-                # "--headless=new", (experimental, does not work in this context)
+                # "--headless=new", (experimental in nodriver)
                 "--disable-extensions",
                 "--disable-brave-extension",
             ],
