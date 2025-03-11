@@ -7,21 +7,46 @@ An automated system for monitoring and purchasing NVIDIA GPUs when they become a
 This project is organized into four main components:
 
 1. **product-scanner** (Rust): Product availability monitoring and automated purchase logic
-   - nvidia API monitoring
+   - NVIDIA API monitoring
    - Product tracking
    - Availability notifications
    - Automatic purchase function
+   - Test mode for validating purchase functionality
 
 2. **cookie-prep** (Python): Cookie and session management
-   - Use script to inject to nvidia shop homepage and show buy button using old proshop purchase link
-   - Follow old purchase link Using 2Captcha to solve Cloudflare challenge
-   - Periodically obtain and save cf_clearance cookie to allow direct purchase once product is available
+   - Browser automation to solve Cloudflare challenges
+   - Automatic cookie acquisition and renewal
+   - Captures and manages cf_clearance cookie for direct purchase access
 
 3. **nvidia_purchase_coordinator.py** (Python): Top-level coordination
    - Orchestrates all system components
    - Manages cookie refreshes on a schedule
    - Starts and monitors product scanner
-   - Provides unified logging and error handling
+   - Enhanced logging with real-time cookie-prep output capture
+   - Sound alerts for important events (availability, errors)
+
+4. **early-warning** (Rust): Monitors for changes in product status before official release
+   - Monitors baseline NVIDIA API values
+   - Alerts when changes are detected in product status
+
+## Recent Improvements
+
+### Enhanced Cookie-Prep Integration
+- Improved logging and output capture from the cookie-prep component
+- Real-time display of cookie acquisition process with proper log level indicators
+- Better error handling and detection of successful or failed cookie acquisition
+- Validation of cookie content to ensure cf_clearance is present
+
+### Product Scanner Refactoring
+- Improved code organization with proper separation of concerns
+- Enhanced configuration structures for better maintainability
+- Added test mode to validate purchase functionality without waiting for actual availability
+- Added purchase simulation for testing the complete purchase flow
+
+### Sound Alert System
+- Configurable sound alerts for important events (product availability, errors)
+- Optional silent mode for unattended operation
+- Distinctive alert patterns for different types of events
 
 ## Setup Instructions
 
@@ -60,6 +85,8 @@ Located at `product-scanner/config/default.toml`
 The purchase configuration controls:
 - Whether automatic purchasing is enabled (`enabled = true/false`)
 - Which product names should trigger a purchase attempt (`product_names` array)
+- API endpoints and request parameters
+- Default purchase links
 
 ## Usage
 
@@ -70,6 +97,9 @@ The easiest way to run the system is using the coordinator script, which manages
 ```bash
 # From the root directory of the project
 python nvidia_purchase_coordinator.py
+
+# Run in silent mode (no sound alerts)
+python nvidia_purchase_coordinator.py --silent
 ```
 
 This will:
@@ -97,8 +127,8 @@ The product scanner will:
 
 ```bash
 # From the cookie-prep directory
-cd cookie-prep
-python -c "import asyncio; from cookie_prep.session_manager import main; asyncio.run(main())"
+cd cookie-prep/src
+python main.py
 ```
 
 ### Test Mode
@@ -196,10 +226,10 @@ The coordinator (nvidia_purchase_coordinator.py) orchestrates the entire system:
    - Runs cookie refresh on a schedule (12-15 minute intervals)
    - Monitors product scanner health
    - Provides consolidated logging
+   - Captures and displays cookie-prep output in real-time
 
 3. Handles shutdown:
    - Gracefully stops all components
-   - Ensures clean process termination
 
 ## Project Status
 

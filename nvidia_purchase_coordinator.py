@@ -207,7 +207,6 @@ def run_session_manager():
                     success_msg = "Session manager completed successfully with fresh cookies"
                     logger.info(success_msg)
                     print(f"[{format_timestamp()}] ✅ Cookie refresh successful!")
-                    play_sound("notification")
                     return True
                 else:
                     warning_msg = "Cookie file exists but may not have been updated"

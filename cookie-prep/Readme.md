@@ -33,6 +33,7 @@ This component works in conjunction with:
 
 1. **Product Scanner**: The scanner uses these cookies to check product availability
 2. **Purchase Core**: The captured cookies enable the purchase core to authenticate with NVIDIA
+3. **Coordinator**: The nvidia_purchase_coordinator.py now features improved real-time output capturing for all cookie-prep messages, with proper formatting and log level identification
 
 ## Usage
 
@@ -58,6 +59,21 @@ The tool will:
 3. Activate and click the buy button
 4. Attempt to obtain the `cf_clearance` cookie
 5. Save cookies to the shared location
+
+### Running via Coordinator (Recommended)
+
+The recommended way to run the cookie-prep tool is via the coordinator script, which provides:
+- Automatic handling of cookie refreshes
+- Enhanced logging with clear formatting
+- Proper integration with other system components
+
+```bash
+# From the project root
+python nvidia_purchase_coordinator.py
+
+# In silent mode (no sound alerts)
+python nvidia_purchase_coordinator.py --silent
+```
 
 ### Retry Logic
 
