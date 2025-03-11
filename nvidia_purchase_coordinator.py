@@ -6,6 +6,7 @@ This script coordinates all components of the NVIDIA purchase system:
 1. Runs the cookie-prep session manager to get fresh cf_clearancecookies
 2. Periodically refreshes cookies (every 12-15 minutes)
 3. Starts the product-scanner/purchase logic
+4. Runs the early-warning indicator to detect API status changes
 """
 import os
 import random
@@ -32,10 +33,12 @@ logger = logging.getLogger("coordinator")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 COOKIE_PREP_DIR = os.path.join(BASE_DIR, "cookie-prep", "src")
 PRODUCT_SCANNER_DIR = os.path.join(BASE_DIR, "product-scanner")
+EARLY_WARNING_DIR = os.path.join(BASE_DIR, "early-warning")
 COOKIE_OUTPUT_PATH = os.path.join(BASE_DIR, "shared", "scripts", "captured_cookies.json")
 
 # Global variables
 scanner_process = None
+early_warning_process = None
 shutdown_event = threading.Event()
 
 
@@ -144,6 +147,53 @@ def start_product_scanner():
         return None
 
 
+def start_early_warning():
+    """
+    Start the early-warning monitor process.
+    
+    Returns:
+        subprocess.Popen: The early-warning process object
+    """
+    global early_warning_process
+    
+    logger.info("Starting early-warning monitor...")
+    print(f"[{format_timestamp()}] Starting early-warning monitor...")
+    
+    try:
+        # Navigate to early-warning directory and run cargo run with verbose flag
+        early_warning_process = subprocess.Popen(
+            ["cargo", "run", "--release", "--", "--verbose", "--interval", "30"],
+            cwd=EARLY_WARNING_DIR,
+            # Don't capture output so it's displayed in real-time
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,  # Line buffered
+            env={**os.environ, "RUST_LOG": "info"}  # Set logging level for the early-warning component
+        )
+        
+        # Create a thread to read and log output
+        def log_early_warning_output():
+            for line in early_warning_process.stdout:
+                line = line.rstrip()
+                # Only print if line is not empty
+                if line:
+                    print(f"[Early Warning] {line}")
+                    logger.info(f"Early Warning: {line}")
+        
+        output_thread = threading.Thread(target=log_early_warning_output)
+        output_thread.daemon = True
+        output_thread.start()
+        
+        logger.info(f"Early-warning monitor started with PID {early_warning_process.pid}")
+        print(f"[{format_timestamp()}] ✅ Early-warning monitor started!")
+        return early_warning_process
+    except Exception as e:
+        logger.error(f"Error starting early-warning monitor: {e}")
+        print(f"[{format_timestamp()}] ❌ Error starting early-warning monitor: {e}")
+        return None
+
+
 def stop_product_scanner():
     """Stop the product scanner process if it's running."""
     global scanner_process
@@ -176,6 +226,38 @@ def stop_product_scanner():
         scanner_process = None
 
 
+def stop_early_warning():
+    """Stop the early-warning monitor process if it's running."""
+    global early_warning_process
+    
+    if early_warning_process:
+        logger.info("Stopping early-warning monitor...")
+        print(f"[{format_timestamp()}] Stopping early-warning monitor...")
+        
+        try:
+            # Send Ctrl+C to the process
+            if sys.platform == 'win32':
+                # Windows-specific way to terminate process
+                early_warning_process.terminate()
+            else:
+                # Unix-like systems
+                early_warning_process.send_signal(signal.SIGINT)
+                
+            # Wait for the process to terminate
+            early_warning_process.wait(timeout=10)
+            logger.info("Early-warning monitor stopped")
+            print(f"[{format_timestamp()}] ✅ Early-warning monitor stopped")
+        except subprocess.TimeoutExpired:
+            logger.warning("Early-warning monitor did not stop gracefully, forcing termination")
+            print(f"[{format_timestamp()}] ⚠️ Forcing early-warning termination")
+            early_warning_process.kill()
+        except Exception as e:
+            logger.error(f"Error stopping early-warning monitor: {e}")
+            print(f"[{format_timestamp()}] ❌ Error stopping early-warning monitor: {e}")
+        
+        early_warning_process = None
+
+
 def cookie_refresh_scheduler():
     """
     Thread function that periodically runs the session manager to refresh cookies.
@@ -199,73 +281,68 @@ def cookie_refresh_scheduler():
 
 
 def signal_handler(sig, frame):
-    """Handle Ctrl+C and other termination signals."""
-    logger.info("Received termination signal, shutting down...")
-    print(f"\n[{format_timestamp()}] Received termination signal, shutting down...")
+    """
+    Signal handler for graceful shutdown on Ctrl+C and other signals.
+    """
+    print(f"\n[{format_timestamp()}] Shutdown signal received, cleaning up...")
+    logger.info("Shutdown signal received")
     
-    # Signal threads to shut down
+    # Set the shutdown event to stop background threads
     shutdown_event.set()
     
-    # Stop scanner
+    # Stop the scanner and early-warning monitor
     stop_product_scanner()
+    stop_early_warning()
     
-    print(f"[{format_timestamp()}] System shutdown complete")
+    print(f"[{format_timestamp()}] Coordinator shutdown complete")
     sys.exit(0)
 
 
 def main():
-    """Main coordinator function."""
-    # Register signal handlers
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
+    """
+    Main coordinator function.
+    """
+    # Set up signal handling for graceful shutdown
+    signal.signal(signal.SIGINT, signal_handler)  # Ctrl+C
+    signal.signal(signal.SIGTERM, signal_handler)  # Termination signal
     
-    print(f"[{format_timestamp()}] NVIDIA Purchase Coordinator starting...")
-    print(f"[{format_timestamp()}] Press Ctrl+C to exit")
+    print(f"\n[{format_timestamp()}] ===== NVIDIA Purchase Coordinator =====")
+    logger.info("Coordinator starting")
     
-    try:
-        # First run of session manager to get initial cookies
-        if not run_session_manager():
-            logger.error("Initial cookie preparation failed, exiting")
-            print(f"[{format_timestamp()}] ❌ Initial cookie preparation failed, exiting")
-            return 1
-        
-        # Start the product scanner
-        if not start_product_scanner():
-            logger.error("Failed to start product scanner, exiting")
-            print(f"[{format_timestamp()}] ❌ Failed to start product scanner, exiting")
-            return 1
-        
-        # Start the cookie refresh scheduler in a separate thread
-        refresh_thread = threading.Thread(target=cookie_refresh_scheduler)
-        refresh_thread.daemon = True
-        refresh_thread.start()
-        
-        # Main thread just waits for shutdown event
-        while not shutdown_event.is_set():
-            # Check if scanner is still running
-            if scanner_process and scanner_process.poll() is not None:
-                logger.warning(f"Product scanner exited unexpectedly with code {scanner_process.returncode}")
-                print(f"[{format_timestamp()}] ⚠️ Product scanner exited unexpectedly")
-                
-                # Try to restart it
-                print(f"[{format_timestamp()}] Attempting to restart product scanner...")
-                if not start_product_scanner():
-                    logger.error("Failed to restart product scanner, exiting")
-                    print(f"[{format_timestamp()}] ❌ Failed to restart product scanner, exiting")
-                    return 1
-            
-            time.sleep(5)
-        
-    except KeyboardInterrupt:
-        # This should be caught by the signal handler, but just in case
-        signal_handler(signal.SIGINT, None)
-    except Exception as e:
-        logger.error(f"Unhandled exception in main: {e}")
-        print(f"[{format_timestamp()}] ❌ Unhandled error: {e}")
-        
-        # Make sure to clean up
-        stop_product_scanner()
+    # Initial cookie preparation
+    if not run_session_manager():
+        print(f"[{format_timestamp()}] Failed to get initial cookies, exiting")
         return 1
+    
+    # Start cookie refresh in a background thread
+    refresh_thread = threading.Thread(target=cookie_refresh_scheduler)
+    refresh_thread.daemon = True
+    refresh_thread.start()
+    
+    # Start the product scanner
+    scanner = start_product_scanner()
+    if not scanner:
+        print(f"[{format_timestamp()}] Failed to start product scanner, exiting")
+        return 1
+    
+    # Start the early-warning monitor
+    early_warning = start_early_warning()
+    if not early_warning:
+        print(f"[{format_timestamp()}] Failed to start early-warning monitor")
+        logger.warning("Early-warning monitor failed to start, continuing without it")
+        # Continue execution, don't exit
+    
+    print(f"[{format_timestamp()}] Coordinator running. Press Ctrl+C to exit.")
+    
+    # Wait for the scanner to complete (it should run indefinitely)
+    try:
+        scanner.wait()
+        logger.warning("Product scanner exited unexpectedly")
+        print(f"[{format_timestamp()}] ⚠️ Product scanner exited unexpectedly. Shutting down...")
+        return 1
+    except KeyboardInterrupt:
+        # This should be caught by the signal handler above
+        pass
     
     return 0
 
