@@ -222,7 +222,13 @@ async def close_browser(browser):
         logger.info("Closing browser...")
         # Check if browser has the stop method before calling it
         if hasattr(browser, "stop") and callable(getattr(browser, "stop")):
-            await browser.stop()
+            # Store the result and check if it's awaitable
+            stop_result = browser.stop()
+            if stop_result is not None and hasattr(stop_result, "__await__"):
+                await stop_result
+            else:
+                # If stop_result is not awaitable, log it but don't try to await it
+                logger.info("Browser stop function returned non-awaitable result")
         else:
             logger.warning("Browser object does not have a stop method or it's not callable")
     except Exception as e:

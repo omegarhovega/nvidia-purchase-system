@@ -251,7 +251,3 @@ The system is capable of:
 
 Each component can be developed and tested independently. See the component-specific
 documentation for development workflows.
-
-## License
-
-[Specify license information]
