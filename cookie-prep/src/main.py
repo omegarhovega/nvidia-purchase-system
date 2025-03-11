@@ -1,28 +1,18 @@
 import asyncio
 from logger import logger
 from session_manager import run_session_manager
-from cookies import check_for_cf_clearance
 
 async def main():
     """
     Main entry point that calls run_session_manager with retry logic.
-    Set auto_close_browser to True to automatically close the browser after completion.
+    Args:
+        attempt (int): Initial attempt number
+        max_attempts (int): Maximum number of attempts before giving up and waiting for next scheduled run
+        auto_close_browser (bool): If True, browser will be closed automatically after completing the task
     """
     try:
-        result = await run_session_manager(attempt=1, max_attempts=3, auto_close_browser=True)
-
-        # Double-check the result with check_for_cf_clearance function
-        cf_cookie_exists = check_for_cf_clearance()
+        await run_session_manager(attempt=1, max_attempts=3, auto_close_browser=True)
         
-        if result and cf_cookie_exists:
-            logger.info("Session manager completed successfully")
-        elif result and not cf_cookie_exists:
-            logger.warning(
-                "Session manager reported success but cf_clearance cookie was not found"
-            )
-        else:
-            logger.warning("Session manager failed to obtain cf_clearance cookie")
-
     except KeyboardInterrupt:
         logger.info("Process interrupted by user. Exiting...")
     except Exception as e:

@@ -125,20 +125,23 @@ def run_session_manager():
     Returns:
         bool: True if successful, False otherwise
     """
-    logger.info("Starting session manager...")
-    print(f"[{format_timestamp()}] Starting cookie refresh...")
+    cookie_prep_path = os.path.join(COOKIE_PREP_DIR, "main.py")
+    
+    if not os.path.exists(cookie_prep_path):
+        logger.error(f"Cookie prep script not found at {cookie_prep_path}")
+        print(f"[{format_timestamp()}] ❌ Cookie prep script not found")
+        return False
     
     try:
-        # Run the cookie-prep script as a subprocess to capture its output
-        cookie_prep_path = os.path.join(COOKIE_PREP_DIR, "main.py")
+        logger.info("Running cookie-prep session manager")
         
+        # Start the cookie-prep subprocess with no output to console
         process = subprocess.Popen(
             [sys.executable, cookie_prep_path],
-            cwd=COOKIE_PREP_DIR,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,  # Line buffered
+            cwd=COOKIE_PREP_DIR,
+            text=False
         )
         
         # Create threads to read stdout and stderr in real-time
@@ -149,93 +152,68 @@ def run_session_manager():
                     if not line:
                         continue
                         
-                    # Check for success or failure indicators
-                    if "Successfully obtained cf_clearance cookie" in line:
-                        logger.info("Cookie-Prep: Successfully obtained cf_clearance cookie")
-                        print(f"[{format_timestamp()}] [Cookie-Prep SUCCESS] Successfully obtained cf_clearance cookie")
-                        continue
-                    elif "Failed to obtain cf_clearance cookie" in line:
-                        logger.error("Cookie-Prep Error: Failed to obtain cf_clearance cookie")
-                        print(f"[{format_timestamp()}] [Cookie-Prep FAILURE] Failed to obtain cf_clearance cookie")
-                        continue
-                        
-                    # Determine log level based on message content
-                    if " - INFO - " in line:
-                        logger.info(f"Cookie-Prep: {line}")
-                        print(f"[{format_timestamp()}] [Cookie-Prep] {line}")
-                    elif " - WARNING - " in line:
-                        logger.warning(f"Cookie-Prep: {line}")
-                        print(f"[{format_timestamp()}] [Cookie-Prep] {line}")
-                    elif " - ERROR - " in line or "Traceback" in line or "Error" in line or is_error:
-                        logger.error(f"Cookie-Prep Error: {line}")
-                        print(f"[{format_timestamp()}] [Cookie-Prep Error] {line}")
-                    else:
-                        # Default to INFO for unformatted messages
-                        logger.info(f"Cookie-Prep: {line}")
-                        print(f"[{format_timestamp()}] [Cookie-Prep] {line}")
+                    # Let through ALL retry messages, error messages with cookies, and others that might be important
+                    if (is_error and "cookie" in line.lower()) or "retry" in line.lower() or "trying again" in line.lower():
+                        print(f"[{format_timestamp()}] {line}")
+                    elif "failed to obtain" in line.lower() or "obtain cookie failed" in line.lower():
+                        print(f"[{format_timestamp()}] {line}")
+                    elif "attempt" in line.lower() and "cookie" in line.lower():
+                        print(f"[{format_timestamp()}] {line}")
+                    elif "session" in line.lower() and "restart" in line.lower():
+                        print(f"[{format_timestamp()}] {line}")
                 except Exception as e:
                     logger.error(f"Error processing cookie-prep output: {str(e)}")
-                    print(f"[{format_timestamp()}] [Coordinator Error] Error processing cookie-prep output: {str(e)}")
-
-        # Start threads to capture output
-        stdout_thread = threading.Thread(
-            target=read_output, 
-            args=(process.stdout, "Cookie-Prep", False)
-        )
-        stderr_thread = threading.Thread(
-            target=read_output, 
-            args=(process.stderr, "Cookie-Prep Error", True)
-        )
+                    if is_error:
+                        print(f"[{format_timestamp()}] Error processing output: {str(e)}")
         
+        # Start threads to read output
+        stdout_thread = threading.Thread(target=read_output, args=(process.stdout, "Cookie-Prep"))
+        stderr_thread = threading.Thread(target=read_output, args=(process.stderr, "Cookie-Prep Error", True))
+        
+        # Make threads daemon so they don't block program exit
         stdout_thread.daemon = True
         stderr_thread.daemon = True
+        
+        # Start the threads
         stdout_thread.start()
         stderr_thread.start()
         
         # Wait for the process to complete
-        return_code = process.wait()
+        process.wait()
         
-        # Wait for threads to finish reading output
-        stdout_thread.join(timeout=2)
-        stderr_thread.join(timeout=2)
+        # Wait for the output threads to finish
+        stdout_thread.join()
+        stderr_thread.join()
         
-        # Check if the process was successful
+        # Check result based on return code and cookie file
+        return_code = process.returncode
+        
         if return_code == 0:
             if os.path.exists(COOKIE_OUTPUT_PATH):
                 # Check if the cookies file was updated in the last minute
                 if time.time() - os.path.getmtime(COOKIE_OUTPUT_PATH) < 60:
-                    success_msg = "Session manager completed successfully with fresh cookies"
-                    logger.info(success_msg)
-                    print(f"[{format_timestamp()}] ✅ Cookie refresh successful!")
+                    logger.info("Cookie refresh successful")
+                    print(f"[{format_timestamp()}] ✅ Cookie refresh successful")
                     return True
                 else:
-                    warning_msg = "Cookie file exists but may not have been updated"
-                    logger.warning(warning_msg)
-                    print(f"[{format_timestamp()}] ⚠️ {warning_msg}")
+                    logger.warning("Cookie file exists but was not updated")
+                    print(f"[{format_timestamp()}] ❌ Cookie refresh failed - file not updated")
                     play_sound("cookie_error")
+                    return False
             else:
-                error_msg = f"Cookie file not found at {COOKIE_OUTPUT_PATH}"
-                logger.error(error_msg)
-                print(f"[{format_timestamp()}] ❌ {error_msg}")
+                logger.error(f"Cookie file not found at {COOKIE_OUTPUT_PATH}")
+                print(f"[{format_timestamp()}] ❌ Cookie refresh failed - file not found")
                 play_sound("cookie_error")
                 return False
         else:
-            error_msg = f"Session manager failed with code {return_code}"
-            logger.error(error_msg)
-            print(f"[{format_timestamp()}] ❌ Cookie refresh failed!")
+            logger.error(f"Session manager failed with code {return_code}")
+            print(f"[{format_timestamp()}] ❌ Cookie refresh failed")
             play_sound("cookie_error")
             return False
-        
-        return True
+    
     except Exception as e:
-        logger.error(f"Error running session manager: {e}")
-        print(f"[{format_timestamp()}] ❌ Error running cookie refresh: {e}")
-        import traceback
-        traceback_str = traceback.format_exc()
-        for line in traceback_str.split('\n'):
-            if line.strip():
-                print(f"[{format_timestamp()}] [Cookie-Prep Error] {line}")
-                logger.error(f"Cookie-Prep Error: {line}")
+        logger.error(f"Error running session manager: {str(e)}")
+        print(f"[{format_timestamp()}] ❌ Cookie refresh failed")
         play_sound("cookie_error")
         return False
 

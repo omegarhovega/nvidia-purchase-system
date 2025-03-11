@@ -1,8 +1,6 @@
 import time
 import asyncio
 import random
-
-# Now import with fully qualified package names
 from config import (
     NVIDIA_URL,
     NVIDIA_BUY_BUTTON_SELECTOR,
@@ -21,7 +19,7 @@ from cookies import save_all_cookies, check_for_cf_clearance
 from logger import logger
 
 
-async def run_session_manager(attempt=1, max_attempts=3, auto_close_browser=True):
+async def run_session_manager(attempt, max_attempts, auto_close_browser):
     """
     Main function to handle Cloudflare challenge and capture cookies.
     Includes retry logic if cf_clearance cookie is not obtained.
@@ -97,7 +95,7 @@ async def handle_buy_button_click(browser, tab):
         await handle_new_tab(browser)
         await asyncio.sleep(3)
 
-        # Guard clause: Check if we have at least 2 tabs (Proshop/Cloudflare challenge opens in new tab)
+        # Check if we have at least 2 tabs (Proshop/Cloudflare challenge opens in new tab)
         if len(browser.tabs) < 2:
             logger.warning("No new tab detected for Cloudflare challenge")
             return
@@ -145,7 +143,7 @@ async def check_cookie_success(attempt, max_attempts, auto_close_browser):
     # Wait a bit for file operations to complete
     time.sleep(1)
 
-    # Guard clause: Return true if we got the cookie
+    # Return true if we got the cookie
     if check_for_cf_clearance():
         logger.info("Successfully obtained cf_clearance cookie!")
         return True
@@ -153,7 +151,7 @@ async def check_cookie_success(attempt, max_attempts, auto_close_browser):
     # If we get here, we failed to obtain the cookie
     logger.warning("Failed to obtain cf_clearance cookie")
     
-    # Guard clause: Return if max attempts reached
+    # Return if max attempts reached
     if attempt >= max_attempts:
         logger.error(f"Failed to obtain cf_clearance cookie after {max_attempts} attempts")
         try:
