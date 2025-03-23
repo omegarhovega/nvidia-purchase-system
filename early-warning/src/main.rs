@@ -56,9 +56,20 @@ struct RetailerInfo {
     sku: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct DefaultSkus {
+    skus: Vec<String>
+}
+
 async fn check_nvidia_api(url: &str) -> Result<NvidiaResponse> {
     let client = reqwest::Client::new();
     
+    // Load default SKUs from JSON file
+    let default_skus = fs::read_to_string("config/default_skus.json")
+        .context("Failed to read default SKUs file")?;
+    let default_skus: DefaultSkus = serde_json::from_str(&default_skus)
+        .context("Failed to parse default SKUs")?;
+
     // Configure headers based on the existing config
     let mut headers = HeaderMap::new();
     headers.insert("User-Agent", HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"));
@@ -100,8 +111,7 @@ async fn check_nvidia_api(url: &str) -> Result<NvidiaResponse> {
                             if let Some(sku) = retailer["sku"].as_str() {
                                 info!("Found SKU: {}", sku);
                                 // Compare with default SKUs
-                                let default_skus = ["PROFESHOP5090", "PRO5080FESHOP1", "NVGFT570"];
-                                if !default_skus.contains(&sku) {
+                                if !default_skus.skus.contains(&sku.to_string()) {
                                     let msg = format!("SKU change detected! New SKU: {}", sku);
                                     warn!("{}", msg);
                                     show_notification("SKU Change Alert", &msg);
