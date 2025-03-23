@@ -3,15 +3,19 @@ use clap::Parser;
 use log::{error, info, warn};
 use notify_rust::Notification;
 use reqwest::header::{HeaderMap, HeaderValue};
+use rodio::{source::SineWave, OutputStream, Sink, Source};
 use serde::{Deserialize, Serialize};
-use std::{thread::sleep, time::Duration};
+use serde_json::Value;
+use std::{thread::sleep, time::{Duration, Instant}};
+use chrono::Local;
+use std::fs;
 
 // Command line arguments
 #[derive(Parser, Debug)]
 #[command(about = "Monitor Nvidia Founders Edition inventory changes")]
 struct Args {
     /// Check interval in seconds
-    #[arg(short, long, default_value = "60")]
+    #[arg(short, long, default_value = "10")]
     interval: u64,
 
     /// Run in verbose mode
@@ -19,20 +23,24 @@ struct Args {
     verbose: bool,
 
     /// Custom endpoint URL
-    #[arg(short, long, default_value = "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=Pro5090FE&locale=DE")]
+    #[arg(short, long, default_value = "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=PROFESHOP5090&locale=de-de")] //PROFESHOP5090, old: Pro5090FE
     url: String,
+
+    /// Path to reference response file
+    #[arg(short, long, default_value = "config/reference_response.json")]
+    reference: String,
 }
 
 // Response model
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct NvidiaResponse {
     success: bool,
-    map: Option<serde_json::Value>,
+    map: Option<Value>,
     #[serde(rename = "listMap")]
     list_map: Vec<ProductInfo>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 struct ProductInfo {
     #[serde(rename = "is_active")]
     is_active: String,
@@ -43,11 +51,9 @@ struct ProductInfo {
     locale: String,
 }
 
-// Expected values (baseline)
-struct ExpectedValues {
-    is_active: String,
-    product_url: String,
-    fe_sku: String,
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+struct RetailerInfo {
+    sku: Option<String>,
 }
 
 async fn check_nvidia_api(url: &str) -> Result<NvidiaResponse> {
@@ -70,6 +76,48 @@ async fn check_nvidia_api(url: &str) -> Result<NvidiaResponse> {
     headers.insert("Sec-Ch-Ua-Mobile", HeaderValue::from_static("?0"));
     headers.insert("Sec-Ch-Ua-Platform", HeaderValue::from_static("\"Windows\""));
 
+    // Make request to the retailers API endpoint
+    let retailers_url = "https://api.nvidia.partners/edge/product/search?page=1&limit=9&locale=de-de&category=GPU&manufacturer=NVIDIA&manufacturer_filter=NVIDIA~1";
+    let retailers_response = client
+        .get(retailers_url)
+        .headers(headers.clone())
+        .timeout(Duration::from_secs(30))
+        .send()
+        .await
+        .context("Failed to send request to NVIDIA retailers API")?
+        .json::<Value>()
+        .await
+        .context("Failed to parse NVIDIA retailers API response")?;
+
+    // Check for SKU changes
+    if let Some(searched_products) = retailers_response["searchedProducts"].as_object() {
+        info!("Checking SKUs in retailers response...");
+        if let Some(product_details) = searched_products.get("productDetails") {
+            if let Some(products) = product_details.as_array() {
+                for product in products {
+                    if let Some(retailers) = product["retailers"].as_array() {
+                        for retailer in retailers {
+                            if let Some(sku) = retailer["sku"].as_str() {
+                                info!("Found SKU: {}", sku);
+                                // Compare with default SKUs
+                                let default_skus = ["PROFESHOP5090", "PRO5080FESHOP1", "NVGFT570"];
+                                if !default_skus.contains(&sku) {
+                                    let msg = format!("SKU change detected! New SKU: {}", sku);
+                                    warn!("{}", msg);
+                                    show_notification("SKU Change Alert", &msg);
+                                    play_alert_sound();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        info!("No searched products found in retailers response");
+    }
+
+    // Continue with the original inventory check
     let response = client
         .get(url)
         .headers(headers)
@@ -84,6 +132,14 @@ async fn check_nvidia_api(url: &str) -> Result<NvidiaResponse> {
     Ok(response)
 }
 
+fn load_reference_response(path: &str) -> Result<NvidiaResponse> {
+    let content = fs::read_to_string(path)
+        .context("Failed to read reference response file")?;
+    let response: NvidiaResponse = serde_json::from_str(&content)
+        .context("Failed to parse reference response")?;
+    Ok(response)
+}
+
 fn show_notification(title: &str, body: &str) {
     if let Err(e) = Notification::new()
         .summary(title)
@@ -94,91 +150,125 @@ fn show_notification(title: &str, body: &str) {
     }
 }
 
-fn detect_changes(expected: &ExpectedValues, actual: &ProductInfo, verbose: bool) -> bool {
-    let mut changed = false;
-    let mut changes = Vec::new();
-
-    if expected.is_active != actual.is_active {
-        changes.push(format!(
-            "is_active changed: '{}' -> '{}'",
-            expected.is_active, actual.is_active
-        ));
-        changed = true;
+fn play_alert_sound() {
+    match OutputStream::try_default() {
+        Ok((_stream, stream_handle)) => {
+            if let Ok(sink) = Sink::try_new(&stream_handle) {
+                // Play three beeps with increasing frequency
+                let frequencies = [440.0, 550.0, 660.0]; // A4, C#5, E5 notes
+                
+                for &freq in &frequencies {
+                    let source = SineWave::new(freq)
+                        .take_duration(Duration::from_millis(150))
+                        .amplify(0.20);
+                    
+                    sink.append(source);
+                    sink.sleep_until_end();
+                }
+            }
+        }
+        Err(e) => error!("Failed to play alert sound: {}", e),
     }
+}
 
-    if expected.product_url != actual.product_url {
-        changes.push(format!(
-            "product_url changed: '{}' -> '{}'",
-            expected.product_url, actual.product_url
-        ));
-        changed = true;
-    }
+fn setup_logging(verbose: bool) -> Result<()> {
+    // Create logs directory if it doesn't exist
+    fs::create_dir_all("logs")?;
 
-    if expected.fe_sku != actual.fe_sku {
-        changes.push(format!(
-            "fe_sku changed: '{}' -> '{}'",
-            expected.fe_sku, actual.fe_sku
-        ));
-        changed = true;
-    }
+    // Generate log file name with timestamp
+    let log_file = format!(
+        "logs/nvidia-monitor_{}.log",
+        Local::now().format("%Y-%m-%d_%H-%M-%S")
+    );
 
-    if changed {
-        let change_message = changes.join("\n");
-        warn!("Detected changes: \n{}", change_message);
-        show_notification(
-            "NVIDIA FE Status Change Detected!",
-            &format!("Changes detected in the Founders Edition status:\n{}", change_message),
-        );
-    } else if verbose {
-        info!("No changes detected. Values remain the same.");
-    }
+    fern::Dispatch::new()
+        // Format string for both file and console
+        .format(|out, message, record| {
+            out.finish(format_args!(
+                "[{}] [{}] {}",
+                Local::now().format("%Y-%m-%d %H:%M:%S"),
+                record.level(),
+                message
+            ))
+        })
+        // Console output configuration
+        .chain(fern::Dispatch::new()
+            .level(if verbose { log::LevelFilter::Debug } else { log::LevelFilter::Info })
+            .chain(std::io::stdout()))
+        // File output configuration
+        .chain(fern::Dispatch::new()
+            .level(log::LevelFilter::Info)
+            .chain(fern::log_file(log_file)?))
+        .apply()?;
 
-    changed
+    Ok(())
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Initialize the logger
-    env_logger::init();
-    
-    // Parse command-line arguments
+    // Parse command-line arguments first
     let args = Args::parse();
     
-    // Set up expected values (baseline)
-    let expected = ExpectedValues {
-        is_active: "false".to_string(),
-        product_url: "".to_string(),
-        fe_sku: "Pro5090FE_DE".to_string(),
-    };
-
+    // Initialize logging with both console and file output
+    setup_logging(args.verbose)?;
+    
     info!("Starting NVIDIA FE monitor...");
     info!("Monitoring URL: {}", args.url);
     info!("Check interval: {} seconds", args.interval);
+
+    // Load reference response
+    let reference_response = load_reference_response(&args.reference)?;
+    info!("Loaded reference response from {}", args.reference);
+    
+    let mut cycle_count = 0;
     
     // Main monitoring loop
     loop {
+        cycle_count += 1;
+        let start_time = Instant::now();
+        
         match check_nvidia_api(&args.url).await {
             Ok(response) => {
-                if args.verbose {
-                    info!("Received response: {:?}", response);
-                }
+                let elapsed = start_time.elapsed();
                 
-                if response.success && !response.list_map.is_empty() {
-                    let product = &response.list_map[0];
-                    detect_changes(&expected, product, args.verbose);
-                } else {
-                    warn!("Received unexpected response format or empty list");
-                    if args.verbose {
-                        info!("Response: {:?}", response);
+                if response.success {
+                    info!("API Response: {:?}", response);
+                    
+                    if response != reference_response {
+                        warn!("Response differs from reference - possible SKU or inventory change!");
+                        info!("Expected: {:?}", reference_response);
+                        info!("Received: {:?}", response);
+                        show_notification(
+                            "NVIDIA FE Response Change!",
+                            "API response differs from reference - possible SKU or inventory change!"
+                        );
+                        play_alert_sound();
+                    } else {
+                        info!(
+                            "Cycle #{}: Response time: {:.2}s - Response matches reference", 
+                            cycle_count,
+                            elapsed.as_secs_f64()
+                        );
                     }
+                } else {
+                    warn!(
+                        "Cycle #{}: Response time: {:.2}s - Unsuccessful response", 
+                        cycle_count,
+                        elapsed.as_secs_f64()
+                    );
                 }
             }
             Err(e) => {
-                error!("Error checking NVIDIA API: {}", e);
+                let elapsed = start_time.elapsed();
+                error!(
+                    "Cycle #{}: Response time: {:.2}s - Error checking NVIDIA API: {}", 
+                    cycle_count,
+                    elapsed.as_secs_f64(),
+                    e
+                );
             }
         }
-
-        // Wait for the specified interval before checking again
+        
         sleep(Duration::from_secs(args.interval));
     }
 }

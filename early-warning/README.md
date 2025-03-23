@@ -57,6 +57,10 @@ With command-line options:
 To see log messages, set the `RUST_LOG` environment variable:
 
 ```bash
+$env:RUST_LOG="info"; cargo run -- --verbose
+```
+
+```bash
 # Windows PowerShell
 $env:RUST_LOG="info"
 ./target/release/nvidia-fe-monitor
