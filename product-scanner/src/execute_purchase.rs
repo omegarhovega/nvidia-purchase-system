@@ -4,6 +4,9 @@ use std::io::Write;
 use std::time::Instant;
 use serde::{Deserialize, Serialize};
 use serde_json::{self, json};
+use rand::{thread_rng, Rng};
+use rand::distributions::Alphanumeric;
+use chrono::Local;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Cookie {
@@ -40,8 +43,18 @@ fn get_shared_scripts_path() -> std::path::PathBuf {
 }
 
 fn get_timestamp() -> String {
-    let now = chrono::Local::now();
-    now.format("%Y-%m-%dT%H:%M:%S").to_string()
+    let now = Local::now();
+    // Format timestamp without colons for filename safety
+    now.format("%Y-%m-%d_%H-%M-%S").to_string()
+}
+
+fn generate_unique_filename() -> String {
+    let random_string: String = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(8)
+        .map(char::from)
+        .collect();
+    format!("captured_purchase_cookies_{}_{}.json", get_timestamp(), random_string)
 }
 
 pub fn fast_purchase(purchase_url: &str) -> Result<bool, Box<dyn Error>> {
@@ -191,7 +204,8 @@ pub fn fast_purchase(purchase_url: &str) -> Result<bool, Box<dyn Error>> {
         "cookies": updated_cookies
     });
 
-    let cookies_output_path = get_shared_scripts_path().join("captured_purchase_cookies_rs.json");
+    let filename = generate_unique_filename();
+    let cookies_output_path = get_shared_scripts_path().join(filename);
     let cookie_json = serde_json::to_string_pretty(&output_data)?;
     let mut file = File::create(&cookies_output_path)?;
     file.write_all(cookie_json.as_bytes())?;
