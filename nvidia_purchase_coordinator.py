@@ -19,17 +19,35 @@ import threading
 import winsound
 from datetime import datetime
 import logging
+import codecs
 
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("coordinator.log"),
-        logging.StreamHandler(sys.stdout)
-    ]
-)
-logger = logging.getLogger("coordinator")
+# Configure logging with UTF-8 encoding
+def setup_logging():
+    # Ensure the logs directory exists
+    os.makedirs('logs', exist_ok=True)
+    
+    # Configure the root logger
+    logger = logging.getLogger("coordinator")
+    logger.setLevel(logging.INFO)
+    
+    # Console handler with UTF-8 encoding
+    console_handler = logging.StreamHandler(codecs.getwriter('utf-8')(sys.stdout.buffer))
+    console_handler.setLevel(logging.INFO)
+    console_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    console_handler.setFormatter(console_formatter)
+    logger.addHandler(console_handler)
+    
+    # File handler with UTF-8 encoding
+    file_handler = logging.FileHandler('coordinator.log', encoding='utf-8')
+    file_handler.setLevel(logging.INFO)
+    file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(file_formatter)
+    logger.addHandler(file_handler)
+    
+    return logger
+
+# Create logger instance
+logger = setup_logging()
 
 # Paths to main components
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -129,7 +147,7 @@ def run_session_manager():
     
     if not os.path.exists(cookie_prep_path):
         logger.error(f"Cookie prep script not found at {cookie_prep_path}")
-        print(f"[{format_timestamp()}] ❌ Cookie prep script not found")
+        print(f"[{format_timestamp()}] Cookie prep script not found")
         return False
     
     try:
@@ -141,14 +159,16 @@ def run_session_manager():
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=COOKIE_PREP_DIR,
-            text=False
+            text=True,
+            encoding='utf-8',  # Specify UTF-8 encoding
+            errors='replace'   # Replace invalid characters
         )
         
         # Create threads to read stdout and stderr in real-time
         def read_output(pipe, prefix, is_error=False):
             for line in pipe:
                 try:
-                    line = line.decode('utf-8').rstrip() if isinstance(line, bytes) else line.rstrip()
+                    line = line.rstrip()
                     if not line:
                         continue
                         
@@ -193,27 +213,27 @@ def run_session_manager():
                 # Check if the cookies file was updated in the last minute
                 if time.time() - os.path.getmtime(COOKIE_OUTPUT_PATH) < 60:
                     logger.info("Cookie refresh successful")
-                    print(f"[{format_timestamp()}] ✅ Cookie refresh successful")
+                    print(f"[{format_timestamp()}] Cookie refresh successful")
                     return True
                 else:
                     logger.warning("Cookie file exists but was not updated")
-                    print(f"[{format_timestamp()}] ❌ Cookie refresh failed - file not updated")
+                    print(f"[{format_timestamp()}] Cookie refresh failed - file not updated")
                     play_sound("cookie_error")
                     return False
             else:
                 logger.error(f"Cookie file not found at {COOKIE_OUTPUT_PATH}")
-                print(f"[{format_timestamp()}] ❌ Cookie refresh failed - file not found")
+                print(f"[{format_timestamp()}] Cookie refresh failed - file not found")
                 play_sound("cookie_error")
                 return False
         else:
             logger.error(f"Session manager failed with code {return_code}")
-            print(f"[{format_timestamp()}] ❌ Cookie refresh failed")
+            print(f"[{format_timestamp()}] Cookie refresh failed")
             play_sound("cookie_error")
             return False
     
     except Exception as e:
         logger.error(f"Error running session manager: {str(e)}")
-        print(f"[{format_timestamp()}] ❌ Cookie refresh failed")
+        print(f"[{format_timestamp()}] Cookie refresh failed")
         play_sound("cookie_error")
         return False
 
@@ -240,6 +260,8 @@ def start_product_scanner():
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
+            encoding='utf-8',  # Specify UTF-8 encoding
+            errors='replace',   # Replace invalid characters
             bufsize=1,  # Line buffered
         )
         
@@ -262,11 +284,11 @@ def start_product_scanner():
         output_thread.start()
         
         logger.info(f"Product scanner started with PID {scanner_process.pid}")
-        print(f"[{format_timestamp()}] ✅ Product scanner started!")
+        print(f"[{format_timestamp()}] Product scanner started!")
         return scanner_process
     except Exception as e:
         logger.error(f"Error starting product scanner: {e}")
-        print(f"[{format_timestamp()}] ❌ Error starting product scanner: {e}")
+        print(f"[{format_timestamp()}] Error starting product scanner: {e}")
         return None
 
 
@@ -291,6 +313,8 @@ def start_early_warning():
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
+            encoding='utf-8',  # Specify UTF-8 encoding
+            errors='replace',   # Replace invalid characters
             bufsize=1,  # Line buffered
             env={**os.environ, "RUST_LOG": "info"}  # Set logging level for the early-warning component
         )
@@ -316,11 +340,11 @@ def start_early_warning():
         output_thread.start()
         
         logger.info(f"Early-warning monitor started with PID {early_warning_process.pid}")
-        print(f"[{format_timestamp()}] ✅ Early-warning monitor started!")
+        print(f"[{format_timestamp()}] Early-warning monitor started!")
         return early_warning_process
     except Exception as e:
         logger.error(f"Error starting early-warning monitor: {e}")
-        print(f"[{format_timestamp()}] ❌ Error starting early-warning monitor: {e}")
+        print(f"[{format_timestamp()}] Error starting early-warning monitor: {e}")
         return None
 
 
@@ -344,14 +368,14 @@ def stop_product_scanner():
             # Wait for the process to terminate
             scanner_process.wait(timeout=10)
             logger.info("Product scanner stopped")
-            print(f"[{format_timestamp()}] ✅ Product scanner stopped")
+            print(f"[{format_timestamp()}] Product scanner stopped")
         except subprocess.TimeoutExpired:
             logger.warning("Product scanner did not stop gracefully, forcing termination")
-            print(f"[{format_timestamp()}] ⚠️ Forcing scanner termination")
+            print(f"[{format_timestamp()}] Forcing scanner termination")
             scanner_process.kill()
         except Exception as e:
             logger.error(f"Error stopping product scanner: {e}")
-            print(f"[{format_timestamp()}] ❌ Error stopping scanner: {e}")
+            print(f"[{format_timestamp()}] Error stopping scanner: {e}")
         
         scanner_process = None
 
@@ -376,14 +400,14 @@ def stop_early_warning():
             # Wait for the process to terminate
             early_warning_process.wait(timeout=10)
             logger.info("Early-warning monitor stopped")
-            print(f"[{format_timestamp()}] ✅ Early-warning monitor stopped")
+            print(f"[{format_timestamp()}] Early-warning monitor stopped")
         except subprocess.TimeoutExpired:
             logger.warning("Early-warning monitor did not stop gracefully, forcing termination")
-            print(f"[{format_timestamp()}] ⚠️ Forcing early-warning termination")
+            print(f"[{format_timestamp()}] Forcing early-warning termination")
             early_warning_process.kill()
         except Exception as e:
             logger.error(f"Error stopping early-warning monitor: {e}")
-            print(f"[{format_timestamp()}] ❌ Error stopping early-warning monitor: {e}")
+            print(f"[{format_timestamp()}] Error stopping early-warning monitor: {e}")
         
         early_warning_process = None
 
@@ -497,7 +521,7 @@ def main():
     try:
         scanner.wait()
         logger.warning("Product scanner exited unexpectedly")
-        print(f"[{format_timestamp()}] ⚠️ Product scanner exited unexpectedly. Shutting down...")
+        print(f"[{format_timestamp()}] Product scanner exited unexpectedly. Shutting down...")
         play_sound("api_error")
         return 1
     except KeyboardInterrupt:

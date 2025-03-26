@@ -1,12 +1,11 @@
 # NVIDIA API Configuration
 
-# API URL including rtx 50 series availability information and direct purchase links
-url = "https://api.nvidia.partners/edge/product/search?page=1&limit=9&manufacturer_filter=NVIDIA%7E1&category=GPU&locale=de-de&manufacturer=NVIDIA"
+# FE inventory API URL for checking product availability
+fe_inventory_url = "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=PROFESHOP5090&locale=de-de"
 
 # Request settings
 [request]
 timeout_secs = 30 # API request timeout in seconds
-connect_timeout_secs = 15 # API connection timeout in seconds
 max_attempts = 4 # max number of attempts to make the request
 sleep_ms_min = 500 # min time between requests in ms
 sleep_ms_max = 1000 # max time between requests in ms
@@ -27,12 +26,6 @@ referer = "https://www.nvidia.com/"
 sec_ch_ua = "\"Google Chrome\";v=\"123\", \"Not:A-Brand\";v=\"8\""
 sec_ch_ua_mobile = "?0"
 sec_ch_ua_platform = "\"Windows\""
-
-# Default purchase links (when these change, the product_checker will mark the product as available)
-[default_links]
-rtx_5070 = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-geforce-rtx-5070/"
-rtx_5080 = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-geforce-rtx-5080/"
-rtx_5090 = "https://marketplace.nvidia.com/de-de/consumer/graphics-cards/nvidia-geforce-rtx-5090/"
 
 # Purchase settings
 [purchase]

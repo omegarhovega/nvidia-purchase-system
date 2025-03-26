@@ -14,7 +14,7 @@ mod product_checker;
 mod launch_purchase;
 mod execute_purchase;
 
-use product_checker::{check_nvidia_api, ApiConfig, HeadersConfig, DefaultLinksConfig, RequestConfig, simulate_available_product};
+use product_checker::{check_nvidia_api, ApiConfig, HeadersConfig, RequestConfig, simulate_available_product};
 use launch_purchase::PurchaseConfig;
 
 #[tokio::main]
@@ -30,17 +30,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .build()?;
     
     // Extract configuration values
-    let api_url = settings.get_string("url")?;
+    let fe_inventory_url = settings.get_string("fe_inventory_url")?;
     let timeout_secs = settings.get_int("request.timeout_secs")? as u64;
-    let connect_timeout_secs = settings.get_int("request.connect_timeout_secs")? as u64;
     let max_attempts = settings.get_int("request.max_attempts")? as u32;
     let sleep_ms_min = settings.get_int("request.sleep_ms_min")? as u64;
     let sleep_ms_max = settings.get_int("request.sleep_ms_max")? as u64;
-    
-    // Extract default links
-    let default_link_5070 = settings.get_string("default_links.rtx_5070")?;
-    let default_link_5080 = settings.get_string("default_links.rtx_5080")?;
-    let default_link_5090 = settings.get_string("default_links.rtx_5090")?;
     
     // Extract purchase configuration
     let purchase_enabled = settings.get_bool("purchase.enabled").unwrap_or(false);
@@ -69,7 +63,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     
     // Create API configuration
     let api_config = ApiConfig {
-        url: api_url,
+        fe_inventory_url,
         headers: HeadersConfig {
             user_agent,
             accept,
@@ -86,14 +80,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
             sec_ch_ua_mobile,
             sec_ch_ua_platform,
         },
-        default_links: DefaultLinksConfig {
-            rtx_5070: default_link_5070,
-            rtx_5080: default_link_5080,
-            rtx_5090: default_link_5090,
-        },
         request: RequestConfig {
             timeout_secs,
-            connect_timeout_secs,
             max_attempts,
             sleep_ms_min,
             sleep_ms_max,
@@ -109,7 +97,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Create HTTP client with timeout
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(timeout_secs))
-        .connect_timeout(Duration::from_secs(connect_timeout_secs))
         .user_agent(&api_config.headers.user_agent)
         .build()?;
     
