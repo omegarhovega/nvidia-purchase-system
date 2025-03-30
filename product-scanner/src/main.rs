@@ -117,20 +117,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
                      Local::now().format("%Y-%m-%d %H:%M:%S"), e);
         }
         
-        // Test with RTX 5070
-        if let Err(e) = simulate_available_product("GeForce RTX 5070", &purchase_config, false).await {
-            error!("Failed to simulate product availability: {}", e);
-            println!("[{}] Failed to simulate product availability: {}", 
-                     Local::now().format("%Y-%m-%d %H:%M:%S"), e);
-        }
-        
-        // Test with a non-configured product
-        if let Err(e) = simulate_available_product("Some Other GPU", &purchase_config, false).await {
-            error!("Failed to simulate product availability: {}", e);
-            println!("[{}] Failed to simulate product availability: {}", 
-                     Local::now().format("%Y-%m-%d %H:%M:%S"), e);
-        }
-        
         println!("[{}] Test completed, exiting", Local::now().format("%Y-%m-%d %H:%M:%S"));
         info!("Test completed, exiting");
         return Ok(());

@@ -186,11 +186,16 @@ pub async fn simulate_available_product(product_name: &str, purchase_config: &Pu
         return Err("Simulated error in test mode".into());
     }
     
+    // Use the sample URL for testing
+    let sample_url = "https://www.proshop.de/Basket/BuyNvidiaGraphicCard?t=bFHncOsrkXFbYRF56H68bUYIDb5AcZcdMLlBR44dZW46fqwfc5XdgVX7GcBoTv0MPqdirRx3xR%2B%2BHzx%2BBotzaO%2F4L%2FlTqKPHplY5e9vGhWSXFRzoebTbYEhykPPVXJ4u2DB0yTMDccuO1cXeoNsy2MRNf3G9p3fUSVp9zASLJ0uJymzkdEijj0QKsZLS8I4GQ252Y7yAUFDboHiEt9TDvJ3Fo1HXw9KXeueIUZ432lQhBuzhHR78O9N%2FbJldC6r9YdeRgCszPH2m2u7VRaaZPasTuvylSd0yj7tOxQOTou85%2BV7D%2Fw3brZng%2Bc5t4CE6vL0qKGsyvL4lH%2FfCE3YWkQ%3D%3D";
+    
     if should_attempt_purchase(product_name, purchase_config) {
-        launch_purchase(
-            product_name,
-            "https://www.proshop.de/Basket/BuyNvidiaGraphicCard?t=bFHncOsrkXFbYRF56H68bUYIDb5AcZcdMLlBR44dZW46fqwfc5XdgVX7GcBoTv0MPqdirRx3xR%2B%2BHzx%2BBotzaO%2F4L%2FlTqKPHplY5e9vGhWSXFRzoebTbYEhykPPVXJ4u2DB0yTMDccuO1cXeoNsy2MRNf3G9p3fUSVp9zASLJ0uJymzkdEijj0QKsZLS8I4GQ252Y7yAUFDboHiEt9TDvJ3Fo1HXw9KXeueIUZ432lQhBuzhHR78O9N%2FbJldC6r9YdeRgCszPH2m2u7VRaaZPasTuvylSd0yj7tOxQOTou85%2BV7D%2Fw3brZng%2Bc5t4CE6vL0qKGsyvL4lH%2FfCE3YWkQ%3D%3D",
-        ).await?;
+        println!("[{}] 🔗 Using sample URL for testing: {}", 
+            Local::now().format("%Y-%m-%d %H:%M:%S"), sample_url);
+        launch_purchase(product_name, sample_url).await?;
+    } else {
+        println!("[{}] ⚠️ Purchase not attempted for '{}' - not in configured product list", 
+            Local::now().format("%Y-%m-%d %H:%M:%S"), product_name);
     }
     
     Ok(())
