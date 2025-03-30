@@ -57,6 +57,29 @@ pub struct RequestConfig {
     pub sleep_ms_max: u64,
 }
 
+/// Checks the FE inventory endpoint for product availability
+async fn check_fe_inventory(
+    config: &ApiConfig,
+    client: &reqwest::Client,
+) -> Result<String, Box<dyn Error>> {
+    let response = client
+        .get(&config.fe_inventory_url)
+        .headers(get_headers(&config.headers))
+        .timeout(Duration::from_secs(config.request.timeout_secs))
+        .send()
+        .await?;
+
+    // Get response text for logging
+    let response_text = response.text().await?;
+    let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    
+    // Log the full response
+    info!("[{}] Server response: {}", timestamp, &response_text);
+    println!("[{}] 📡 Server response: {}", timestamp, &response_text);
+
+    Ok(response_text)
+}
+
 /// Makes a request to NVIDIA FE inventory API and checks product availability
 pub async fn check_nvidia_api(
     config: &ApiConfig, 
@@ -81,45 +104,35 @@ pub async fn check_nvidia_api(
         }
 
         match check_fe_inventory(config, client).await {
-            Ok(Some(response)) => {
-                let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-                
-                if let Some(fe_product) = response.list_map.first() {
-                    info!("[{}] Product details - SKU: {}, Active: {}, Price: {}, URL: {}", 
-                        timestamp, 
-                        fe_product.fe_sku,
-                        fe_product.is_active,
-                        fe_product.price,
-                        fe_product.product_url
-                    );
-                    println!("[{}] 🔍 Product details:", timestamp);
-                    println!("[{}]    SKU: {}", timestamp, fe_product.fe_sku);
-                    println!("[{}]    Active: {}", timestamp, fe_product.is_active);
-                    println!("[{}]    Price: {}", timestamp, fe_product.price);
-                    println!("[{}]    URL: {}", timestamp, fe_product.product_url);
-                    
-                    if !fe_product.product_url.is_empty() {
-                        info!("[{}] Found active product URL in FE inventory: {}", timestamp, fe_product.product_url);
-                        println!("[{}] ✨ Found active product URL!", timestamp);
-                        if purchase_config.enabled {
-                            return launch_purchase(&fe_product.fe_sku, &fe_product.product_url).await;
-                        } else {
-                            println!("[{}] ⚠️ Purchase is disabled in configuration", timestamp);
+            Ok(response_text) => {
+                // Only parse and check for purchase if needed
+                if purchase_config.enabled {
+                    match serde_json::from_str::<FeInventoryResponse>(&response_text) {
+                        Ok(parsed) if parsed.success => {
+                            // Check for products with URLs
+                            let available_product = parsed.list_map.iter()
+                                .find(|product| !product.product_url.is_empty());
+                            
+                            if let Some(product) = available_product {
+                                // Launch purchase process immediately (priority)
+                                let result = launch_purchase(&product.fe_sku, &product.product_url).await;
+                                // Print message after launch attempt
+                                let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+                                println!("[{}] 🚀 Purchase process launched for product: {}", timestamp, product.fe_sku);
+                                return result;
+                            } else {
+                                // No URL found
+                                let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+                                println!("[{}] ❌ No product URL found", timestamp);
+                            }
+                        },
+                        _ => {
+                            // Failed to parse or unsuccessful response
+                            let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+                            println!("[{}] ❌ No product URL found", timestamp);
                         }
-                    } else {
-                        info!("[{}] Product URL is empty, no product available", timestamp);
-                        println!("[{}] 😴 Product URL is empty, no product available", timestamp);
                     }
-                } else {
-                    info!("[{}] No products found in FE inventory response", timestamp);
-                    println!("[{}] 🚫 No products found in response", timestamp);
                 }
-                return Ok(());
-            }
-            Ok(None) => {
-                let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-                info!("[{}] FE inventory check returned no success status", timestamp);
-                println!("[{}] ❌ Server returned unsuccessful status", timestamp);
                 return Ok(());
             }
             Err(e) => {
@@ -142,42 +155,6 @@ pub async fn check_nvidia_api(
     }
 
     Ok(())
-}
-
-/// Checks the FE inventory endpoint for product availability
-async fn check_fe_inventory(
-    config: &ApiConfig,
-    client: &reqwest::Client,
-) -> Result<Option<FeInventoryResponse>, Box<dyn Error>> {
-    let response = client
-        .get(&config.fe_inventory_url)
-        .headers(get_headers(&config.headers))
-        .timeout(Duration::from_secs(config.request.timeout_secs))
-        .send()
-        .await?;
-
-    // Get response text for logging
-    let response_text = response.text().await?;
-    let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-    
-    // Log the full response
-    info!("[{}] Full server response: {}", timestamp, response_text);
-    println!("[{}] 📡 Server response: {}", timestamp, response_text);
-
-    // Parse the response
-    let response: FeInventoryResponse = match serde_json::from_str(&response_text) {
-        Ok(resp) => resp,
-        Err(e) => {
-            error!("[{}] Failed to parse response as JSON: {}", timestamp, e);
-            return Err(format!("Failed to parse response as JSON: {}", e).into());
-        }
-    };
-
-    if response.success {
-        Ok(Some(response))
-    } else {
-        Ok(None)
-    }
 }
 
 /// Helper function to create HeaderMap from HeadersConfig
@@ -212,7 +189,7 @@ pub async fn simulate_available_product(product_name: &str, purchase_config: &Pu
     if should_attempt_purchase(product_name, purchase_config) {
         launch_purchase(
             product_name,
-            "https://store.nvidia.com/de-de/geforce/store/?page=1&limit=9&locale=de-de",
+            "https://www.proshop.de/Basket/BuyNvidiaGraphicCard?t=bFHncOsrkXFbYRF56H68bUYIDb5AcZcdMLlBR44dZW46fqwfc5XdgVX7GcBoTv0MPqdirRx3xR%2B%2BHzx%2BBotzaO%2F4L%2FlTqKPHplY5e9vGhWSXFRzoebTbYEhykPPVXJ4u2DB0yTMDccuO1cXeoNsy2MRNf3G9p3fUSVp9zASLJ0uJymzkdEijj0QKsZLS8I4GQ252Y7yAUFDboHiEt9TDvJ3Fo1HXw9KXeueIUZ432lQhBuzhHR78O9N%2FbJldC6r9YdeRgCszPH2m2u7VRaaZPasTuvylSd0yj7tOxQOTou85%2BV7D%2Fw3brZng%2Bc5t4CE6vL0qKGsyvL4lH%2FfCE3YWkQ%3D%3D",
         ).await?;
     }
     
