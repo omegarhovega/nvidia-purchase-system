@@ -270,12 +270,29 @@ def start_product_scanner():
             for line in scanner_process.stdout:
                 line = line.rstrip()
                 print(line)
-                logger.info(f"Scanner: {line}")
+                
+                # Add specific prefixes for purchase-related logs to make them more identifiable
+                if "[INFO] Loading cookies" in line or "[INFO] Loaded" in line or "[INFO] Found cf_clearance" in line:
+                    logger.info(f"Purchase: {line}")
+                elif "[INFO] Making request" in line or "[INFO] Final URL" in line or "[INFO] Saved" in line:
+                    logger.info(f"Purchase: {line}")
+                elif "🚀 LAUNCHING PURCHASE" in line or "🔗 Product Link" in line:
+                    logger.info(f"Purchase: {line}")
+                elif "⏳ Starting purchase attempt" in line or "✅ Purchase process completed" in line:
+                    logger.info(f"Purchase: {line}")
+                elif "⚠️ Purchase attempt" in line or "❌ All" in line and "purchase attempts failed" in line:
+                    logger.info(f"Purchase: {line}")
+                else:
+                    logger.info(f"Scanner: {line}")
                 
                 # Check for specific messages to trigger sound alerts
                 lower_line = line.lower()
                 if "is available" in lower_line or "launching purchase" in lower_line:
                     play_sound("product_available")
+                elif "purchase process completed successfully" in lower_line:
+                    play_sound("product_available")  # Use same sound for successful purchase
+                elif "all purchase attempts failed" in lower_line:
+                    play_sound("api_error")  # Use error sound for failed purchase
                 elif "api response" in lower_line and "200" not in lower_line:
                     play_sound("api_error")
         

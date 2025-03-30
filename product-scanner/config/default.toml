@@ -26,13 +26,3 @@ referer = "https://www.nvidia.com/"
 sec_ch_ua = "\"Google Chrome\";v=\"123\", \"Not:A-Brand\";v=\"8\""
 sec_ch_ua_mobile = "?0"
 sec_ch_ua_platform = "\"Windows\""
-
-# Purchase settings
-[purchase]
-enabled = true # Whether to attempt purchases when products are available
-# List of product names to purchase when available
-product_names = [
-    "GeForce RTX 5070",
-    "GeForce RTX 5080",
-    "GeForce RTX 5090"
-]

@@ -15,7 +15,6 @@ mod launch_purchase;
 mod execute_purchase;
 
 use product_checker::{check_nvidia_api, ApiConfig, HeadersConfig, RequestConfig, simulate_available_product};
-use launch_purchase::PurchaseConfig;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -35,16 +34,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let max_attempts = settings.get_int("request.max_attempts")? as u32;
     let sleep_ms_min = settings.get_int("request.sleep_ms_min")? as u64;
     let sleep_ms_max = settings.get_int("request.sleep_ms_max")? as u64;
-    
-    // Extract purchase configuration
-    let purchase_enabled = settings.get_bool("purchase.enabled").unwrap_or(false);
-    let purchase_product_names: Vec<String> = settings
-        .get_array("purchase.product_names")
-        .unwrap_or_default()
-        .iter()
-        .filter_map(|v| v.clone().into_string().ok())
-        .collect();
-    
+
     // Extract headers
     let user_agent = settings.get_string("headers.user_agent")?;
     let accept = settings.get_string("headers.accept")?;
@@ -88,12 +78,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         },
     };
     
-    // Create purchase configuration
-    let purchase_config = PurchaseConfig {
-        enabled: purchase_enabled,
-        product_names: purchase_product_names,
-    };
-    
     // Create HTTP client with timeout
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(timeout_secs))
@@ -111,7 +95,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         info!("Running in TEST MODE{}", if test_error_mode { " (with forced error)" } else { "" });
         
         // Test with RTX 5090
-        if let Err(e) = simulate_available_product("GeForce RTX 5090", &purchase_config, test_error_mode).await {
+        if let Err(e) = simulate_available_product("GeForce RTX 5090", test_error_mode).await {
             error!("Failed to simulate product availability: {}", e);
             println!("[{}] Failed to simulate product availability: {}", 
                      Local::now().format("%Y-%m-%d %H:%M:%S"), e);
@@ -144,7 +128,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         cycle += 1;
         
         // Check NVIDIA API
-        if let Err(e) = check_nvidia_api(&api_config, &client, &purchase_config, cycle).await {
+        if let Err(e) = check_nvidia_api(&api_config, &client, cycle).await {
             error!("Cycle #{} - Failed to check NVIDIA API: {}", cycle, e);
         }
         

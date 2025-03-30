@@ -2,12 +2,7 @@ use log::info;
 use chrono::Local;
 use std::error::Error;
 use crate::execute_purchase;
-
-/// Configuration for the purchase launcher
-pub struct PurchaseConfig {
-    pub enabled: bool,
-    pub product_names: Vec<String>,
-}
+use tokio::time;
 
 /// Launches the purchase process for a specific product
 /// 
@@ -20,39 +15,52 @@ pub async fn launch_purchase(product_name: &str, product_link: &str) -> Result<(
     println!("[{}] 🚀 LAUNCHING PURCHASE PROCESS FOR: {}", timestamp, product_name);
     println!("[{}] 🔗 Product Link: {}", timestamp, product_link);
     
-    // Call the execute_purchase module with the product link
-    println!("[{}] ⏳ Starting purchase process with execute_purchase", timestamp);
+    // Make multiple purchase attempts in quick succession
+    const MAX_ATTEMPTS: usize = 3;
+    let mut success = false;
+    let mut last_error: Option<Box<dyn Error>> = None;
     
-    info!("Running fast_purchase function with link: {}", product_link);
-    
-    // Execute the purchase function with the product link
-    match execute_purchase::fast_purchase(product_link) {
-        Ok(true) => {
-            info!("Purchase executed successfully");
-            println!("[{}] ✅ Purchase process completed successfully", timestamp);
-        },
-        Ok(false) => {
-            info!("Purchase process failed");
-            println!("[{}] ❌ Purchase process failed", timestamp);
-            return Err("Purchase process failed".into());
-        },
-        Err(e) => {
-            info!("Purchase process error: {}", e);
-            println!("[{}] ❌ Purchase process failed with error", timestamp);
-            println!("[{}] Error: {}", timestamp, e);
-            return Err(e);
+    for attempt in 1..=MAX_ATTEMPTS {
+        println!("[{}] ⏳ Starting purchase attempt {}/{}", timestamp, attempt, MAX_ATTEMPTS);
+        info!("Running fast_purchase function with link: {} (attempt {}/{})", product_link, attempt, MAX_ATTEMPTS);
+        
+        // Execute the purchase function with the product link
+        match execute_purchase::fast_purchase(product_link) {
+            Ok(true) => {
+                info!("Purchase executed successfully on attempt {}", attempt);
+                println!("[{}] ✅ Purchase process completed successfully on attempt {}", timestamp, attempt);
+                success = true;
+                break;
+            },
+            Ok(false) => {
+                info!("Purchase process failed on attempt {}", attempt);
+                println!("[{}] ⚠️ Purchase attempt {} failed, trying again...", timestamp, attempt);
+                last_error = Some("Purchase process failed".into());
+                
+                // Only wait between attempts, not after the last one
+                if attempt < MAX_ATTEMPTS {
+                    time::sleep(time::Duration::from_millis(500)).await;
+                }
+            },
+            Err(e) => {
+                info!("Purchase process error on attempt {}: {}", attempt, e);
+                println!("[{}] ⚠️ Purchase attempt {} failed with error: {}", timestamp, attempt, e);
+                last_error = Some(e);
+                
+                // Only wait between attempts, not after the last one
+                if attempt < MAX_ATTEMPTS {
+                    time::sleep(time::Duration::from_millis(500)).await;
+                }
+            }
         }
     }
     
-    Ok(())
-}
-
-/// Determines if a purchase should be attempted for a given product
-pub fn should_attempt_purchase(product_name: &str, config: &PurchaseConfig) -> bool {
-    if !config.enabled {
-        return false;
+    if success {
+        Ok(())
+    } else if let Some(e) = last_error {
+        println!("[{}] ❌ All {} purchase attempts failed", timestamp, MAX_ATTEMPTS);
+        Err(e)
+    } else {
+        Err("All purchase attempts failed with unknown error".into())
     }
-    
-    // Check if this product is in our list of products to purchase
-    config.product_names.iter().any(|name| product_name.contains(name))
 }

@@ -5,7 +5,7 @@ use log::{info, warn, error};
 use reqwest;
 use serde::{Deserialize, Serialize};
 
-use crate::launch_purchase::{launch_purchase, should_attempt_purchase, PurchaseConfig};
+use crate::launch_purchase::launch_purchase;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FeInventoryResponse {
@@ -84,7 +84,6 @@ async fn check_fe_inventory(
 pub async fn check_nvidia_api(
     config: &ApiConfig, 
     client: &reqwest::Client,
-    purchase_config: &PurchaseConfig,
     cycle: u64
 ) -> Result<(), Box<dyn Error>> {
     let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
@@ -106,31 +105,29 @@ pub async fn check_nvidia_api(
         match check_fe_inventory(config, client).await {
             Ok(response_text) => {
                 // Only parse and check for purchase if needed
-                if purchase_config.enabled {
-                    match serde_json::from_str::<FeInventoryResponse>(&response_text) {
-                        Ok(parsed) if parsed.success => {
-                            // Check for products with URLs
-                            let available_product = parsed.list_map.iter()
-                                .find(|product| !product.product_url.is_empty());
-                            
-                            if let Some(product) = available_product {
-                                // Launch purchase process immediately (priority)
-                                let result = launch_purchase(&product.fe_sku, &product.product_url).await;
-                                // Print message after launch attempt
-                                let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-                                println!("[{}] 🚀 Purchase process launched for product: {}", timestamp, product.fe_sku);
-                                return result;
-                            } else {
-                                // No URL found
-                                let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-                                println!("[{}] ❌ No product URL found", timestamp);
-                            }
-                        },
-                        _ => {
-                            // Failed to parse or unsuccessful response
+                match serde_json::from_str::<FeInventoryResponse>(&response_text) {
+                    Ok(parsed) if parsed.success => {
+                        // Check for products with URLs
+                        let available_product = parsed.list_map.iter()
+                            .find(|product| !product.product_url.is_empty());
+                        
+                        if let Some(product) = available_product {
+                            // Launch purchase process immediately (priority)
+                            let result = launch_purchase(&product.fe_sku, &product.product_url).await;
+                            // Print message after launch attempt
+                            let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+                            println!("[{}] 🚀 Purchase process launched for product: {}", timestamp, product.fe_sku);
+                            return result;
+                        } else {
+                            // No URL found
                             let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
                             println!("[{}] ❌ No product URL found", timestamp);
                         }
+                    },
+                    _ => {
+                        // Failed to parse or unsuccessful response
+                        let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+                        println!("[{}] ❌ No product URL found", timestamp);
                     }
                 }
                 return Ok(());
@@ -178,7 +175,7 @@ fn get_headers(config: &HeadersConfig) -> reqwest::header::HeaderMap {
 }
 
 /// For testing purposes only: Simulates a product being available
-pub async fn simulate_available_product(product_name: &str, purchase_config: &PurchaseConfig, force_error: bool) -> Result<(), Box<dyn Error>> {
+pub async fn simulate_available_product(product_name: &str, force_error: bool) -> Result<(), Box<dyn Error>> {
     println!("\n[{}] 🧪 TEST MODE: Simulating product availability for '{}'", 
         Local::now().format("%Y-%m-%d %H:%M:%S"), product_name);
     
@@ -189,14 +186,9 @@ pub async fn simulate_available_product(product_name: &str, purchase_config: &Pu
     // Use the sample URL for testing
     let sample_url = "https://www.proshop.de/Basket/BuyNvidiaGraphicCard?t=bFHncOsrkXFbYRF56H68bUYIDb5AcZcdMLlBR44dZW46fqwfc5XdgVX7GcBoTv0MPqdirRx3xR%2B%2BHzx%2BBotzaO%2F4L%2FlTqKPHplY5e9vGhWSXFRzoebTbYEhykPPVXJ4u2DB0yTMDccuO1cXeoNsy2MRNf3G9p3fUSVp9zASLJ0uJymzkdEijj0QKsZLS8I4GQ252Y7yAUFDboHiEt9TDvJ3Fo1HXw9KXeueIUZ432lQhBuzhHR78O9N%2FbJldC6r9YdeRgCszPH2m2u7VRaaZPasTuvylSd0yj7tOxQOTou85%2BV7D%2Fw3brZng%2Bc5t4CE6vL0qKGsyvL4lH%2FfCE3YWkQ%3D%3D";
     
-    if should_attempt_purchase(product_name, purchase_config) {
-        println!("[{}] 🔗 Using sample URL for testing: {}", 
-            Local::now().format("%Y-%m-%d %H:%M:%S"), sample_url);
-        launch_purchase(product_name, sample_url).await?;
-    } else {
-        println!("[{}] ⚠️ Purchase not attempted for '{}' - not in configured product list", 
-            Local::now().format("%Y-%m-%d %H:%M:%S"), product_name);
-    }
-    
+    println!("[{}] 🔗 Using sample URL for testing: {}", 
+        Local::now().format("%Y-%m-%d %H:%M:%S"), sample_url);
+    launch_purchase(product_name, sample_url).await?;
+
     Ok(())
 }
