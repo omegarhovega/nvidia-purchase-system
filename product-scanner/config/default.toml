@@ -1,7 +1,7 @@
 # NVIDIA API Configuration
 
 # FE inventory API URL for checking product availability
-fe_inventory_url = "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=PROFESHOP5090&locale=DE"
+fe_inventory_url = "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=PRONVGFT570SHOP&locale=de-de"
 
 # Request settings
 [request]

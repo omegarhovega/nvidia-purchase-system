@@ -62,8 +62,16 @@ async fn check_fe_inventory(
     config: &ApiConfig,
     client: &reqwest::Client,
 ) -> Result<String, Box<dyn Error>> {
+    // Add timestamp for cache busting
+    let timestamp = chrono::Utc::now().timestamp_millis();
+    let url = if config.fe_inventory_url.contains('?') {
+        format!("{}&t={}", config.fe_inventory_url, timestamp)
+    } else {
+        format!("{}?t={}", config.fe_inventory_url, timestamp)
+    };
+    
     let response = client
-        .get(&config.fe_inventory_url)
+        .get(&url)
         .headers(get_headers(&config.headers))
         .timeout(Duration::from_secs(config.request.timeout_secs))
         .send()
@@ -83,7 +91,7 @@ async fn check_fe_inventory(
 /// Makes a request to NVIDIA FE inventory API and checks product availability
 pub async fn check_nvidia_api(
     config: &ApiConfig, 
-    client: &reqwest::Client,
+    _client: &reqwest::Client, 
     cycle: u64
 ) -> Result<(), Box<dyn Error>> {
     let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
@@ -102,7 +110,13 @@ pub async fn check_nvidia_api(
             tokio::time::sleep(Duration::from_secs(backoff_secs)).await;
         }
 
-        match check_fe_inventory(config, client).await {
+        // Create a new client for each attempt
+        let new_client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(config.request.timeout_secs))
+            .user_agent(&config.headers.user_agent)
+            .build()?;
+
+        match check_fe_inventory(config, &new_client).await {
             Ok(response_text) => {
                 // Only parse and check for purchase if needed
                 match serde_json::from_str::<FeInventoryResponse>(&response_text) {

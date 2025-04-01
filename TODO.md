@@ -1,22 +1,30 @@
+ISSUES:
+------------
+- Why in logs did product_url not appear in product_checker request response but in early-warning responses? Check that current solution gets link with next drop (could also be rate cached response?) --> the product_url should not be empty here when is_active is true, this happened with the monitor responses, not with the early-warning responses - check headers, other details carefully. Add cache busting or new session for each monitoring request?
+- Why is launch_purchase so much slower than fast_purchase?
+
+TODO:
+------------
+- SIMPLIFY:Remove launch_purchase.rs file (test purchase simulate_available_product 3 secs slower than fast_purchase) and launch purchase directly with minimal delay
 - Measure performance of each step in ms and see if optimization is needed
-- session manager messages are not logged correctly in coordinator + no sound alerts when session manager fails
-- Run early-warning separately to get alert when sku changes and drop is imminent (https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=PROFESHOP5090&locale=DE" response changes to {"success":true,"map":null,"listMap":[]})
+- Ensure right logging, with time stamps for everything
+- Wenn active scheint alter Proshop Link in cookie script zu Proshop Warenkorb zu führen. Trick: Falls is_active = true aber keine URL, dann alternativ altem Link folgen?
+- Understand session management from cookie script to purchase script (purchase uses last available from cookie script?)
+- Add purchase mechanism for all products
+
 
 For a release build with better performance:
 cargo build --release
 $env:RUST_LOG="info"
 .\target\release\nvidia-fe-monitor
 
-- NL example link: https://www.proshop.nl/NVIDIA-Exclusive-Store/NVIDIA-GeForce-RTX-5090-Founders-Edition-32GB-1-stuks-per-klant/3331529 it seems that after alert is triggered that new sku is made (early-warning) one can follow the old purchase link?
-
 
 https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=PRONVGFT570SHOP&locale=de-de
 
 {"success":true,"map":null,"listMap":[{"is_active":"false","product_url":"","price":"1000000","fe_sku":"PRONVGFT570SHOP_DE","locale":"DE"}]}
 changed to this when active: {"success":true,"map":null,"listMap":[{"is_active":"true","product_url":"","price":"619","fe_sku":"PRONVGFT570SHOP_DE","locale":"DE"}]}
+--> the product_url should not be empty here when is_active is true, this happened with the monitor responses, not with the early-warning responses - check headers, other details carefully.
 
-Antworten der API hier aufzeichnen, um zu checken welcher link erscheint (product_url)
-gleiches für
 https://api.nvidia.partners/edge/product/search?page=1&limit=9&manufacturer_filter=NVIDIA%7E1&category=GPU&locale=de-de&manufacturer=NVIDIA
 
 und direct link felder directPurchaseLink, internalLink
@@ -67,3 +75,4 @@ PS C:\Users\Admin\Documents\Code\Fast GPU check\Nvidia purchase system\product-s
 [2025-03-30 13:17:25] ✅ Purchase process completed successfully on attempt 1
 [2025-03-30 13:17:29] Test completed, exiting
 PS C:\Users\Admin\Documents\Code\Fast GPU check\Nvidia purchase system\product-scanner> 
+

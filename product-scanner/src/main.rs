@@ -78,11 +78,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         },
     };
     
-    // Create HTTP client with timeout
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(timeout_secs))
-        .user_agent(&api_config.headers.user_agent)
-        .build()?;
+    // Create a dummy client just for compatibility - we'll create new ones for each request
+    let client = reqwest::Client::new();
     
     println!("[{}] Configuration loaded successfully", Local::now().format("%Y-%m-%d %H:%M:%S"));
     info!("Configuration loaded successfully");
