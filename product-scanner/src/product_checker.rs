@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::time::Duration;
 use chrono::Local;
-use log::{info, warn, error};
+use log::{info, warn};
 use reqwest;
 use serde::{Deserialize, Serialize};
 

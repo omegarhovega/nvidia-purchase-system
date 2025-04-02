@@ -1,13 +1,10 @@
 ISSUES:
 ------------
-- Why in logs did product_url not appear in product_checker request response but in early-warning responses? Check that current solution gets link with next drop (could also be rate cached response?) --> the product_url should not be empty here when is_active is true, this happened with the monitor responses, not with the early-warning responses - check headers, other details carefully. Add cache busting or new session for each monitoring request?
-- Why is launch_purchase so much slower than fast_purchase?
+- Script now worked live, however, sometimes now the cookie script leads to a 400 page at Proshop. So valid cookie only sometimes gained even after cloudflare solved.
 
 TODO:
 ------------
-- SIMPLIFY:Remove launch_purchase.rs file (test purchase simulate_available_product 3 secs slower than fast_purchase) and launch purchase directly with minimal delay
 - Measure performance of each step in ms and see if optimization is needed
-- Ensure right logging, with time stamps for everything
 - Wenn active scheint alter Proshop Link in cookie script zu Proshop Warenkorb zu führen. Trick: Falls is_active = true aber keine URL, dann alternativ altem Link folgen?
 - Understand session management from cookie script to purchase script (purchase uses last available from cookie script?)
 - Add purchase mechanism for all products
