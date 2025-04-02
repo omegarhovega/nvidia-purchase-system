@@ -9,12 +9,13 @@ use reqwest;
 use config::Config as AppConfig;
 use tokio;
 use std::env;
+use std::time::Instant;
 
 mod product_checker;
-mod launch_purchase;
 mod execute_purchase;
 
 use product_checker::{check_nvidia_api, ApiConfig, HeadersConfig, RequestConfig, simulate_available_product};
+use execute_purchase::fast_purchase;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -92,10 +93,41 @@ async fn main() -> Result<(), Box<dyn Error>> {
         info!("Running in TEST MODE{}", if test_error_mode { " (with forced error)" } else { "" });
         
         // Test with RTX 5090
-        if let Err(e) = simulate_available_product("GeForce RTX 5090", test_error_mode).await {
-            error!("Failed to simulate product availability: {}", e);
-            println!("[{}] Failed to simulate product availability: {}", 
-                     Local::now().format("%Y-%m-%d %H:%M:%S"), e);
+        match simulate_available_product("GeForce RTX 5090", test_error_mode).await {
+            Ok(Some((product_name, product_url))) => {
+                println!("[{}] 🚀 TEST MODE: Initiating purchase for {}", 
+                         Local::now().format("%Y-%m-%d %H:%M:%S"), product_name);
+                
+                // Measure purchase execution time
+                let start_time = Instant::now();
+                
+                match fast_purchase(&product_url) {
+                    Ok(true) => {
+                        let elapsed = start_time.elapsed();
+                        println!("[{}] ✅ TEST MODE: Purchase completed successfully in {:.2}s", 
+                                 Local::now().format("%Y-%m-%d %H:%M:%S"), elapsed.as_secs_f64());
+                    },
+                    Ok(false) => {
+                        let elapsed = start_time.elapsed();
+                        println!("[{}] ⚠️ TEST MODE: Purchase attempt failed in {:.2}s", 
+                                 Local::now().format("%Y-%m-%d %H:%M:%S"), elapsed.as_secs_f64());
+                    },
+                    Err(e) => {
+                        let elapsed = start_time.elapsed();
+                        println!("[{}] ❌ TEST MODE: Purchase attempt failed with error in {:.2}s: {}", 
+                                 Local::now().format("%Y-%m-%d %H:%M:%S"), elapsed.as_secs_f64(), e);
+                    }
+                }
+            },
+            Ok(None) => {
+                println!("[{}] ⚠️ TEST MODE: No product URL found in simulation", 
+                         Local::now().format("%Y-%m-%d %H:%M:%S"));
+            },
+            Err(e) => {
+                error!("Failed to simulate product availability: {}", e);
+                println!("[{}] ❌ TEST MODE: Failed to simulate product availability: {}", 
+                         Local::now().format("%Y-%m-%d %H:%M:%S"), e);
+            }
         }
         
         println!("[{}] Test completed, exiting", Local::now().format("%Y-%m-%d %H:%M:%S"));
@@ -124,9 +156,43 @@ async fn main() -> Result<(), Box<dyn Error>> {
     while running.load(Ordering::SeqCst) {
         cycle += 1;
         
-        // Check NVIDIA API
-        if let Err(e) = check_nvidia_api(&api_config, &client, cycle).await {
-            error!("Cycle #{} - Failed to check NVIDIA API: {}", cycle, e);
+        // Check NVIDIA API for available products
+        match check_nvidia_api(&api_config, &client, cycle).await {
+            Ok(Some((product_name, product_url))) => {
+                // Product is available, initiate purchase immediately
+                println!("[{}] 🚀 LAUNCHING PURCHASE PROCESS FOR: {}", 
+                         Local::now().format("%Y-%m-%d %H:%M:%S"), product_name);
+                println!("[{}] 🔗 Product Link: {}", 
+                         Local::now().format("%Y-%m-%d %H:%M:%S"), product_url);
+                
+                // Measure purchase execution time
+                let start_time = Instant::now();
+                
+                // Execute the purchase directly
+                match fast_purchase(&product_url) {
+                    Ok(true) => {
+                        let elapsed = start_time.elapsed();
+                        println!("[{}] ✅ Purchase process completed successfully in {:.2}s", 
+                                 Local::now().format("%Y-%m-%d %H:%M:%S"), elapsed.as_secs_f64());
+                    },
+                    Ok(false) => {
+                        let elapsed = start_time.elapsed();
+                        println!("[{}] ⚠️ Purchase attempt failed in {:.2}s", 
+                                 Local::now().format("%Y-%m-%d %H:%M:%S"), elapsed.as_secs_f64());
+                    },
+                    Err(e) => {
+                        let elapsed = start_time.elapsed();
+                        println!("[{}] ❌ Purchase attempt failed with error in {:.2}s: {}", 
+                                 Local::now().format("%Y-%m-%d %H:%M:%S"), elapsed.as_secs_f64(), e);
+                    }
+                }
+            },
+            Ok(None) => {
+                // No product available, continue monitoring
+            },
+            Err(e) => {
+                error!("Cycle #{} - Failed to check NVIDIA API: {}", cycle, e);
+            }
         }
         
         // Random sleep between configured min and max values
