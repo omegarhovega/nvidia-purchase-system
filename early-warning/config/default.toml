@@ -1,0 +1,24 @@
+# API URLs
+[api]
+fe_inventory_url = "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=PROFESHOP5090&locale=de-de"
+retailers_url = "https://api.nvidia.partners/edge/product/search?page=1&limit=9&locale=de-de&category=GPU&manufacturer=NVIDIA&manufacturer_filter=NVIDIA~1"
+
+# SKUs to monitor
+[skus]
+list = [
+    "PROFESHOP5090",
+    "PRO5080FESHOP",
+    "PRONVGFT570SHOP"
+]
+
+# Reference response for comparison
+[reference]
+success = true
+map = "null"  # Using string "null" since TOML doesn't have null
+
+[[reference.list_map]]
+is_active = "false"
+product_url = ""
+price = "1000000"
+fe_sku = "PROFESHOP5090_DE"
+locale = "DE"

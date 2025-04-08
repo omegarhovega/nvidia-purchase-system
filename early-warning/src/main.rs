@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use clap::Parser;
+use config::Config;
 use log::{error, info, warn};
 use notify_rust::Notification;
 use reqwest::header::{HeaderMap, HeaderValue};
@@ -22,13 +23,13 @@ struct Args {
     #[arg(short, long)]
     verbose: bool,
 
-    /// Custom endpoint URL
-    #[arg(short, long, default_value = "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=PROFESHOP5090&locale=de-de")] //PROFESHOP5090, old: Pro5090FE
-    url: String,
+    /// Custom endpoint URL (overrides config file)
+    #[arg(short, long)]
+    url: Option<String>,
 
-    /// Path to reference response file
-    #[arg(short, long, default_value = "config/reference_response.json")]
-    reference: String,
+    /// Path to config file
+    #[arg(short, long, default_value = "config/default.toml")]
+    config: String,
 }
 
 // Response model
@@ -56,19 +57,16 @@ struct RetailerInfo {
     sku: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct DefaultSkus {
-    skus: Vec<String>
-}
-
-async fn check_nvidia_api(url: &str) -> Result<NvidiaResponse> {
+async fn check_nvidia_api(url: &str, settings: &Config) -> Result<NvidiaResponse> {
     let client = reqwest::Client::new();
     
-    // Load default SKUs from JSON file
-    let default_skus = fs::read_to_string("config/default_skus.json")
-        .context("Failed to read default SKUs file")?;
-    let default_skus: DefaultSkus = serde_json::from_str(&default_skus)
-        .context("Failed to parse default SKUs")?;
+    // Get SKUs from config
+    let skus: Vec<String> = settings.get("skus.list")
+        .context("Failed to get SKUs from config")?;
+    
+    // Get retailers URL from config
+    let retailers_url = settings.get_string("api.retailers_url")
+        .context("Failed to get retailers URL from config")?;
 
     // Configure headers based on the existing config
     let mut headers = HeaderMap::new();
@@ -88,7 +86,6 @@ async fn check_nvidia_api(url: &str) -> Result<NvidiaResponse> {
     headers.insert("Sec-Ch-Ua-Platform", HeaderValue::from_static("\"Windows\""));
 
     // Make request to the retailers API endpoint
-    let retailers_url = "https://api.nvidia.partners/edge/product/search?page=1&limit=9&locale=de-de&category=GPU&manufacturer=NVIDIA&manufacturer_filter=NVIDIA~1";
     let retailers_response = client
         .get(retailers_url)
         .headers(headers.clone())
@@ -111,7 +108,7 @@ async fn check_nvidia_api(url: &str) -> Result<NvidiaResponse> {
                             if let Some(sku) = retailer["sku"].as_str() {
                                 info!("Found SKU: {}", sku);
                                 // Compare with default SKUs
-                                if !default_skus.skus.contains(&sku.to_string()) {
+                                if !skus.contains(&sku.to_string()) {
                                     let msg = format!("SKU change detected! New SKU: {}", sku);
                                     warn!("{}", msg);
                                     show_notification("SKU Change Alert", &msg);
@@ -142,12 +139,24 @@ async fn check_nvidia_api(url: &str) -> Result<NvidiaResponse> {
     Ok(response)
 }
 
-fn load_reference_response(path: &str) -> Result<NvidiaResponse> {
-    let content = fs::read_to_string(path)
-        .context("Failed to read reference response file")?;
-    let response: NvidiaResponse = serde_json::from_str(&content)
-        .context("Failed to parse reference response")?;
-    Ok(response)
+fn load_reference_response(settings: &Config) -> Result<NvidiaResponse> {
+    let success = settings.get_bool("reference.success")
+        .context("Failed to get reference success status")?;
+    
+    let map = if settings.get_string("reference.map")? == "null" {
+        None
+    } else {
+        Some(Value::String(settings.get_string("reference.map")?))
+    };
+    
+    let list_map: Vec<ProductInfo> = settings.get("reference.list_map")
+        .context("Failed to get reference list_map")?;
+
+    Ok(NvidiaResponse {
+        success,
+        map,
+        list_map,
+    })
 }
 
 fn show_notification(title: &str, body: &str) {
@@ -219,16 +228,29 @@ async fn main() -> Result<()> {
     // Parse command-line arguments first
     let args = Args::parse();
     
+    // Load configuration
+    let settings = Config::builder()
+        .add_source(config::File::with_name(&args.config))
+        .build()
+        .context("Failed to load configuration")?;
+    
+    // Get API URL from command line args or config file
+    let api_url = args.url.unwrap_or_else(|| {
+        settings.get_string("api.fe_inventory_url")
+            .expect("Failed to get FE inventory URL from config")
+    });
+    
     // Initialize logging with both console and file output
     setup_logging(args.verbose)?;
     
     info!("Starting NVIDIA FE monitor...");
-    info!("Monitoring URL: {}", args.url);
+    info!("Using config file: {}", args.config);
+    info!("Monitoring URL: {}", api_url);
     info!("Check interval: {} seconds", args.interval);
 
-    // Load reference response
-    let reference_response = load_reference_response(&args.reference)?;
-    info!("Loaded reference response from {}", args.reference);
+    // Load reference response from config
+    let reference_response = load_reference_response(&settings)?;
+    info!("Loaded reference response from config");
     
     let mut cycle_count = 0;
     
@@ -237,7 +259,7 @@ async fn main() -> Result<()> {
         cycle_count += 1;
         let start_time = Instant::now();
         
-        match check_nvidia_api(&args.url).await {
+        match check_nvidia_api(&api_url, &settings).await {
             Ok(response) => {
                 let elapsed = start_time.elapsed();
                 
