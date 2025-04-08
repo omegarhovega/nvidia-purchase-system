@@ -9,7 +9,11 @@ A Rust script that monitors NVIDIA's API for product availability changes and SK
 - Desktop notifications with sound alerts
 - Configurable check interval (default: 10 seconds)
 - Detailed logging to both console and file
-- Customizable API endpoint URL
+- Configuration via TOML file
+
+## Configuration
+
+All settings are managed in `config/default.toml`.
 
 ## Usage
 
@@ -26,8 +30,8 @@ cargo build --release
 # Run with verbose logging
 ./target/release/nvidia-fe-monitor --verbose
 
-# Use custom API endpoint
-./target/release/nvidia-fe-monitor --url "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=PROFESHOP5090&locale=de-de"
+# Use custom config file
+./target/release/nvidia-fe-monitor --config "path/to/config.toml"
 ```
 
 ## Logging
@@ -45,7 +49,7 @@ $env:RUST_LOG="info"
 The script will alert you when:
 - Product availability status changes
 - Product URLs are updated
-- SKU changes are detected
+- SKU changes are detected in retailer API
 - API response differs from the reference response
 
 Alerts include:

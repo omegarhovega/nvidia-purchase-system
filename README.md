@@ -29,24 +29,66 @@ This project is organized into four main components:
    - Monitors baseline NVIDIA API values
    - Alerts when changes are detected in product status
 
-## Recent Improvements
+## Configuration
 
-### Enhanced Cookie-Prep Integration
-- Improved logging and output capture from the cookie-prep component
-- Real-time display of cookie acquisition process with proper log level indicators
-- Better error handling and detection of successful or failed cookie acquisition
-- Validation of cookie content to ensure cf_clearance is present
+The system uses TOML files for Rust components and Python configuration files:
 
-### Product Scanner Refactoring
-- Improved code organization with proper separation of concerns
-- Enhanced configuration structures for better maintainability
-- Added test mode to validate purchase functionality without waiting for actual availability
-- Added purchase simulation for testing the complete purchase flow
+### Product Scanner Configuration
+
+Located at `product-scanner/config/default.toml`
+
+The scanner configuration controls:
+- API endpoints and timeouts
+- Request headers and user agent
+- Retry parameters
+- Sleep intervals between checks
+
+### Early Warning Configuration
+
+Located at `early-warning/config/default.toml`
+
+The monitoring configuration controls:
+- API endpoints for inventory and retailer checks
+- SKUs to monitor for availability
+- Reference response for comparison
+
+### Cookie Preparation Configuration
+
+Located in `cookie-prep/src/config.py`
+
+The cookie configuration controls:
+- Browser type and executable path
+- Cookie refresh interval
+- 2Captcha API key for automated purchasing
+
+### Coordinator Configuration
+
+Configuration is handled directly in `nvidia_purchase_coordinator.py`
+
+The coordinator configuration controls:
+- Component lifecycle and communication
+- Unified logging and monitoring
+- Configurable sound alert patterns
+- Cookie refresh intervals
+
+## Features
+
+### Monitoring System
+
+- Real-time monitoring of NVIDIA's inventory API
+- Product availability tracking
+- SKU change detection
+- Multiple API endpoint support
 
 ### Sound Alert System
-- Configurable sound alerts for important events (product availability, errors)
+
+- Configurable sound alerts for important events:
+  - Product availability
+  - Early warnings
+  - API errors
+  - Cookie errors
+  - General notifications
 - Optional silent mode for unattended operation
-- Distinctive alert patterns for different types of events
 
 ## Setup Instructions
 
@@ -54,9 +96,8 @@ This project is organized into four main components:
 
 - Rust (stable channel)
 - Python 3.8+
-- Required dependencies (see component-specific READMEs)
-- 2Captcha API key
 - Brave, Chrome or other Chromium based browser
+- 2Captcha API key
 
 ### Installation
 
@@ -73,20 +114,6 @@ This project is organized into four main components:
    cd cookie-prep
    pip install -r requirements.txt
    ```
-
-## Configuration
-
-The system is configured using TOML files:
-
-### Product Scanner Configuration
-
-Located at `product-scanner/config/default.toml`
-
-The purchase configuration controls:
-- Whether automatic purchasing is enabled (`enabled = true/false`)
-- Which product names should trigger a purchase attempt (`product_names` array)
-- API endpoints and request parameters
-- Default purchase links
 
 ## Usage
 
@@ -233,7 +260,7 @@ The coordinator (nvidia_purchase_coordinator.py) orchestrates the entire system:
 
 ## Project Status
 
-As of March 10, 2025, the project has successfully implemented:
+As of April 8, 2025, the project has successfully implemented:
 
 1. Comprehensive product scanning functionality
 2. Automatic purchase initiation when products are available
