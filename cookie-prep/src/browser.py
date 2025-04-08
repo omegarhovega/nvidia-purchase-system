@@ -13,14 +13,13 @@ from logger import logger
 # Load environment variables from .env file with 2Captcha API key
 load_dotenv()
 
-
 async def setup_browser():
     """
     Setup nodriver Browser with Brave browser and configurations.
     """
     try:
         browser = await nodriver.Browser.create(
-            browser_executable_path="C:/Program Files/Google/Chrome/Application/chrome.exe",
+            browser_executable_path="C:/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe",
             # browser_executable_path="C:/Program Files/Google/Chrome/Application/chrome.exe",
             # "C:/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe"
             browser_args=[
