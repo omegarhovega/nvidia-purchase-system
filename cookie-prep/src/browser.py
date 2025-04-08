@@ -20,7 +20,7 @@ async def setup_browser():
     try:
         browser = await nodriver.Browser.create(
             browser_executable_path="C:/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe",
-            # browser_executable_path="C:/Program Files/Google/Chrome/Application/chrome.exe",
+            # "C:/Program Files/Google/Chrome/Application/chrome.exe",
             # "C:/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe"
             browser_args=[
                 "--window-size=1920,1080",
