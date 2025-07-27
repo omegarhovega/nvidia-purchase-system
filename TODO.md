@@ -1,12 +1,12 @@
-ISSUES:
+ISSUES/OBSERVATIONS:
 ------------
 - Script now worked live, however, sometimes now the cookie script leads to a 400 page at Proshop. So valid cookie only sometimes gained even after cloudflare solved.
+- Old purchase links seem to work as well (sometimes when cards were live, the cookie script presumably using an old purchase link led to carting of itmes as well)
 
 TODO:
 ------------
 - Measure performance of each step in ms and see if optimization is needed
-- Wenn active scheint alter Proshop Link in cookie script zu Proshop Warenkorb zu führen. Trick: Falls is_active = true aber keine URL, dann alternativ altem Link folgen?
-- Understand session management from cookie script to purchase script (purchase uses last available from cookie script?)
+- Add automatic update to skus when change is detected via early-warning in product-scanner (default.toml files)
 - Add purchase mechanism for all products
 
 

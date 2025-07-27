@@ -54,8 +54,8 @@ PROSHOP_URLS_5090 = [
     "https://www.proshop.de/Basket/BuyNvidiaGraphicCard?t=bFHncOsrkXFbYRF56H68bUYIDb5AcZcdMLlBR44dZW46fqwfc5XdgVX7GcBoTv0MPqdirRx3xR%2B%2BHzx%2BBotzaO%2F4L%2FlTqKPHplY5e9vGhWSXFRzoebTbYEhykPPVXJ4u2DB0yTMDccuO1cXeoNsy2MRNf3G9p3fUSVp9zASLJ0uJymzkdEijj0QKsZLS8I4GQ252Y7yAUFDboHiEt9TDvJ3Fo1HXw9KXeueIUZ432lQhBuzhHR78O9N%2FbJldC6r9YdeRgCszPH2m2u7VRaaZPasTuvylSd0yj7tOxQOTou85%2BV7D%2Fw3brZng%2Bc5t4CE6vL0qKGsyvL4lH%2FfCE3YWkQ%3D%3D",
 ]
 
-# Stale Proshop URL to allow doing the redirect to get the cf_clearance cookie
-PROSHOP_URL = random.choice(PROSHOP_URLS_5080)
+# Proshop URL to allow doing the redirect to get the cf_clearance cookie (uses links from previous drops), can be set for RTX 5090, 5080 and 5070 Founders Edition cards
+PROSHOP_URL = random.choice(PROSHOP_URLS_5090)
 
 # Selector for the buy button on product page
 NVIDIA_BUY_BUTTON_SELECTOR = "#resultsDiv > div > div > div:nth-child(2) > div.product_detail_78.nv-priceAndCTAContainer > div > div.clearfix.pdc-87.fe-pids > a > button"
