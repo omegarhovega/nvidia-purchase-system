@@ -72,7 +72,7 @@ Before installing, ensure you have:
    cp .env.example .env
    
    # Edit .env file with your 2captcha API key (optional, for automated captcha solving)
-   # APIKEY_2CAPTCHA=your_actual_api_key_here
+   APIKEY_2CAPTCHA=your_actual_api_key_here
    ```
 
 6. **Test the installation**
