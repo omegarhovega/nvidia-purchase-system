@@ -1,14 +1,18 @@
-# NVIDIA GPU Purchase System
+# 🎯 NVIDIA GPU Purchase System
 
 An automated system for monitoring and purchasing NVIDIA Founders Edition GPUs when they become available. This system is specifically optimized for ProShop (European NVIDIA retail partner) but can be adapted for other retailers.
 
-✅ The script has been successfully used to cart RTX 5090 and RTX 5080 GPUs during several drops. Note, however, that while this gives you an advantage, results are not guaranteed and depend on many factors (your connection speed, current retailer server load, traffic detection logic, use of VPNs, proxies, and simple luck). In all likelihood, depending on current demand and availability, several attempts will be needed. To be clear, we don't care for scalping and do not engage in it...nor should you.
+✅ The script has been successfully used to cart RTX 5090 and RTX 5080 GPUs during several drops. 
+
+Note, however, that while this gives you an advantage, results are not guaranteed and depend on many factors (your connection speed, current retailer server load, traffic detection logic, use of VPNs, proxies, and simple luck). In all likelihood, depending on current demand and availability, several attempts will be needed. 
+
+To be clear, we don't care for scalping and do not engage in it...nor should you.
 
 ⚠️ **Important**: Please confirm and respect each vendor's terms of service before using this system.
 
-## Quick Start Installation
+## 🚀 Quick Start Installation
 
-### Prerequisites
+### 📋 Prerequisites
 
 Before installing, ensure you have:
 
@@ -18,7 +22,7 @@ Before installing, ensure you have:
 4. **2captcha API key** (register at [2captcha.com](https://2captcha.com/) - optional, can also be done manually)
 5. **Chrome/Chromium browser** (for cookie-prep automation)
 
-### Step-by-Step Installation
+### 🔧 Step-by-Step Installation
 
 1. **Clone the repository**
    ```bash
@@ -79,7 +83,7 @@ python nvidia_purchase_coordinator.py
 python nvidia_purchase_coordinator.py --test
 ```
 
-## How to Use
+## 📚 How to Use
 
 When you run `python nvidia_purchase_coordinator.py`, here's what happens:
 
@@ -99,7 +103,7 @@ When you run `python nvidia_purchase_coordinator.py`, here's what happens:
 - ⚠️ **Rate Limiting**: Too many requests may trigger additional protection measures
 - 🍀 **Lucky Direct Purchase**: If a GPU is actually live during this process, you might successfully purchase it immediately!
 
-### Phase 2: Continuous Monitoring
+### 👀 Phase 2: Continuous Monitoring
 
 Once cookies are acquired, the system enters monitoring mode:
 
@@ -108,23 +112,23 @@ Once cookies are acquired, the system enters monitoring mode:
 3. **Cookie Refresh**: Automatically refreshes authentication cookies every 12-15 minutes
 4. **Audio Alerts**: Plays sound notifications for important events
 
-### Phase 3: Purchase Attempt
+### 💳 Phase 3: Purchase Attempt
 
 When a GPU becomes available:
 
 1. **Instant Response**: The system immediately attempts to add the GPU to cart
 2. **Cookie Authentication**: Uses the stored `cf_clearance` cookie for authenticated access
-3. **Cart Success**: If successful, the updated session cookie is saved to `shared/scripts/captured_cookies.json`
+3. **Cart Success**: If successful, the updated session cookie is saved to `shared/scripts/captured_cookies.json`. If the folder creation fails, manually add the shared/scripts folder to the main project folder.
 4. **Manual Checkout**: You copy the `cf_clearance` cookie to your browser, navigate to ProShop, click on the cart and complete the purchase manually (cookies are usually valid for around 10 minutes so you have enough time to complete the purchase)
 
-### Monitoring the Process
+### 🔍 Monitoring the Process
 
 - **Console Output**: Real-time status updates and important events
 - **Log File**: Detailed logging saved to `coordinator.log`
 - **Audio Alerts**: Different sounds for availability, errors, and warnings
 - **Component Status**: Automatic restart of failed components
 
-### Key Settings
+### 🔧 Key Settings
 
 #### `product-scanner/config/default.toml`
 - **`fe_inventory_url`**: NVIDIA API endpoint for checking product availability (includes SKU and locale)
@@ -153,7 +157,7 @@ When a GPU becomes available:
 - **Silent mode**: `--silent` flag to disable audio alerts
 - **File paths**: Locations for components and cookie storage
 
-## Project Structure
+## 📁 Project Structure
 
 This project is organized into four main components:
 
@@ -180,7 +184,7 @@ This project is organized into four main components:
    - Monitors baseline NVIDIA API values
    - Alerts when changes are detected in product status
 
-## Configuration
+## ⚙️ Configuration
 
 The system uses TOML files for Rust components and Python configuration files:
 
@@ -236,7 +240,7 @@ The product scanner will:
 1. Monitor the NVIDIA API for product availability
 2. When a product becomes available, it will automatically initiate the purchase process
 
-#### Running Cookie Preparation Manually
+### Running Cookie Preparation Manually
 
 ```bash
 # From the cookie-prep directory
@@ -270,7 +274,7 @@ This test mode is useful for:
 
 Press `Ctrl+C` to gracefully stop all components.
 
-## Implementation Details
+## ⚙️ Implementation Details
 
 ### System Architecture
 
@@ -344,6 +348,6 @@ The coordinator (nvidia_purchase_coordinator.py) orchestrates the entire system:
 3. Handles shutdown:
    - Gracefully stops all components
 
-## Potetnial improvements:
+## 🔧 Potetnial improvements:
 - Automated SKU updates after a detected change
 - Including logic for other retail partners
