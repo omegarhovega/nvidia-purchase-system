@@ -87,7 +87,7 @@ python nvidia_purchase_coordinator.py --test
 
 When you run `python nvidia_purchase_coordinator.py`, here's what happens:
 
-### Phase 1: Initial Cookie Acquisition
+### 🍪 Phase 1: Initial Cookie Acquisition
 
 1. **Browser Opens**: A Chrome/Chromium browser window will automatically open and navigate to the NVIDIA shop website
 2. **Script Injection**: The system injects JavaScript to simulate availability of the selected GPU and activates the purchase link button
