@@ -1,4 +1,4 @@
-# 🎯 NVIDIA GPU Purchase System
+# 🟩 NVIDIA GPU Purchase System
 
 An automated system for monitoring and purchasing NVIDIA Founders Edition GPUs when they become available. This system is specifically optimized for ProShop (European NVIDIA retail partner) but can be adapted for other retailers.
 
