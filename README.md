@@ -45,7 +45,20 @@ Before installing, ensure you have:
    pip install -r requirements.txt
    ```
 
-3. **Build Rust components**
+3. **Configure browser (optional)**
+   ```bash
+   # If you want to use a different browser, edit cookie-prep/src/browser.py
+   # Change the browser_executable_path to your preferred browser, e.g. under Windows:
+   # For Chrome: "C:/Program Files/Google/Chrome/Application/chrome.exe"
+   # For Brave: "C:/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe"
+   ```
+
+4. **Set up 2Captcha (optional)**
+   ```bash
+   # Rename .env.example to .env and add your 2Captcha API key (if you want automated captcha solving)
+   ```
+
+5. **Build Rust components**
    ```bash
    # Build product scanner
    cd product-scanner
@@ -131,22 +144,21 @@ When a GPU becomes available:
 ### 🔧 Key Settings
 
 #### `product-scanner/config/default.toml`
-- **`fe_inventory_url`**: NVIDIA API endpoint for checking product availability (includes SKU and locale)
+- **`fe_inventory_url`**: NVIDIA API endpoint for checking product availability (includes SKU and locale). Needs to be updated after a SKU change is detected (see `early-warning`)
 - **`timeout_secs`**: API request timeout (default: 30 seconds)
 - **`max_attempts`**: Maximum retry attempts for failed requests (default: 4)
 - **`sleep_ms_min/max`**: Request interval randomization (1000-1100ms)
 
 #### `early-warning/config/default.toml`
-- **`fe_inventory_url`**: Same API endpoint as product scanner
+- **`fe_inventory_url`**: Same API endpoint as product scanner. Needs to be updated after a SKU change is detected (see `early-warning`)
 - **`retailers_url`**: NVIDIA partners API for broader monitoring
 - **`skus.list`**: Array of SKUs to monitor (e.g., "PROFESHOP5090", "PRO5080FESHOP"); NOTE: after an SKU change is detected, you need to update to the new SKUs in this file to track new changes
 - **`reference`**: Baseline response values for change detection
 
 #### `cookie-prep/src/config.py`
-- **`NVIDIA_URL`**: NVIDIA marketplace URL for the desired GPU model
-- **`PROSHOP_URLS_5070/5080/5090`**: Arrays of ProShop purchase URLs for each GPU model
-- **`PROSHOP_URL`**: Main ProShop redirect URL for cookie acquisition
-- **`INJECT_SCRIPT`**: JavaScript injection settings for API simulation
+- **`NVIDIA_URL`**: NVIDIA marketplace URL for the desired GPU model (country code "de-de" can be changed to other countries)
+- **`PROSHOP_URLS_5070/5080/5090`**: Arrays of ProShop purchase URLs from previous drop which are used by the cookie-prep inject script to unmask the purchase link on the Nvidia website (can be updated manually with newer links)
+- **`PROSHOP_URL`**: Set to desired GPU model (5070/5080/5090) you are interested in
 
 #### `nvidia_purchase_coordinator.py`
 - **Cookie refresh interval**: 12-15 minutes (randomized, line 438)
