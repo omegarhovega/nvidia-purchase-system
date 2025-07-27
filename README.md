@@ -53,11 +53,7 @@ Before installing, ensure you have:
    # For Brave: "C:/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe"
    ```
 
-4. **Set up 2Captcha (optional)**
-   
-   Rename .env.example to .env and add your 2Captcha API key (if you want automated captcha solving)
-
-5. **Build Rust components**
+4. **Build Rust components**
    ```bash
    # Build product scanner
    cd product-scanner
@@ -70,16 +66,16 @@ Before installing, ensure you have:
    cd ..
    ```
 
-4. **Configure environment**
+5. **Configure environment**
    ```bash
    # Copy example environment file
    cp .env.example .env
    
-   # Edit .env file with your 2captcha API key
+   # Edit .env file with your 2captcha API key (optional, for automated captcha solving)
    # APIKEY_2CAPTCHA=your_actual_api_key_here
    ```
 
-5. **Test the installation**
+6. **Test the installation**
    ```bash
    # Run in test mode to verify everything works
    python nvidia_purchase_coordinator.py --test
