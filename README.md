@@ -1,6 +1,22 @@
 # NVIDIA GPU Purchase System
 
-An automated system for monitoring and purchasing NVIDIA GPUs when they become available.
+An automated system for monitoring and purchasing NVIDIA Founders Edition GPUs when they become available.
+
+This version is optimized for purchasing through the ProShop store (one of the European retail partners for nvidia) but could be adopted for any other retailers, following the example of the cookie-prep logic (see below).
+
+The script is desinged in the following way:
+
+
+Potential improvements:
+- Using proxies to improve chances for purchase (introduces costs)
+- Adding support for further retailers
+
+Please note to confirm and respect each vendor's terms of service before using such a script. 
+
+## Development
+
+Each component can be developed and tested independently. See the component-specific
+documentation for development workflows.
 
 ## Project Structure
 
@@ -258,23 +274,3 @@ The coordinator (nvidia_purchase_coordinator.py) orchestrates the entire system:
 3. Handles shutdown:
    - Gracefully stops all components
 
-## Project Status
-
-As of April 8, 2025, the project has successfully implemented:
-
-1. Comprehensive product scanning functionality
-2. Automatic purchase initiation when products are available
-3. Integration between the product scanner and purchase components
-4. Cookie management and Cloudflare bypass
-5. Full test suite for verifying functionality
-
-The system is capable of:
-- Monitoring NVIDIA API for product availability
-- Automatically initiating purchases when configured products are available
-- Successfully maintaining authenticated sessions with Cloudflare protection
-- Performing end-to-end testing of the purchase flow
-
-## Development
-
-Each component can be developed and tested independently. See the component-specific
-documentation for development workflows.
