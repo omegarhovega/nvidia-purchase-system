@@ -54,9 +54,8 @@ Before installing, ensure you have:
    ```
 
 4. **Set up 2Captcha (optional)**
-   ```bash
-   # Rename .env.example to .env and add your 2Captcha API key (if you want automated captcha solving)
-   ```
+   
+   Rename .env.example to .env and add your 2Captcha API key (if you want automated captcha solving)
 
 5. **Build Rust components**
    ```bash
