@@ -355,6 +355,6 @@ The coordinator (nvidia_purchase_coordinator.py) orchestrates the entire system:
 3. Handles shutdown:
    - Gracefully stops all components
 
-## 🔧 Potetnial improvements:
+## 🔧 Potential improvements:
 - Automated SKU updates after a detected change
 - Including logic for other retail partners
